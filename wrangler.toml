@@ -1,0 +1,20 @@
+name = "mazenos"
+main = "worker.js"
+compatibility_date = "2025-02-01"
+
+[triggers]
+crons = ["0 0 * * *"] # 03:00 AM Asia/Riyadh (UTC+3)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mazenos_db"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "00000000000000000000000000000000"
+
+[vars]
+TIMEZONE = "Asia/Riyadh"
+DEFAULT_AI_PROVIDER = "gemini"
+DEFAULT_MODEL_TIER = "light"

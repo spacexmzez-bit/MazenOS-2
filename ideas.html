@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Idea Vault</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .timer-pill {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--warning);
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--warning-soft);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Ideas</span>
+    </div>
+    <div class="os-header-meta">
+      <button type="button" class="btn btn-primary" id="startQuickCaptureBtn">+ Add Idea (3:00 Timer)</button>
+      <a href="settings.html?from=ideas" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <!-- 3-Minute Write-Only Quick Capture Box -->
+    <div class="card" id="quickCaptureCard" style="display:none;margin-bottom:1.5rem;border-color:var(--warning);">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">3-Minute Write-Only Quick Capture</h2>
+          <p class="card-subtitle">Get the distraction out of your head and return immediately to deep work. Vault seals when submitted or at 00:00.</p>
+        </div>
+        <span class="timer-pill" id="captureCountdownDisplay">03:00</span>
+      </div>
+      <form id="ideaCaptureForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ideaDomainSelect">Domain Tag</label>
+            <select id="ideaDomainSelect">
+              <option value="general">General</option>
+              <option value="hardware">Electronics &amp; Arduino</option>
+              <option value="software">Software &amp; Vibe Coding</option>
+              <option value="academic">Study &amp; Research</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="ideaContentInput">Idea / Distraction Note</label>
+          <textarea id="ideaContentInput" rows="3" placeholder="Write the raw idea here before the 3-minute timer expires..." required></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
+          <button type="submit" class="btn btn-primary">Seal in Vault</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Vault Lock & Friday Synthesis Controls -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Idea Vault Confinement</h1>
+          <p class="card-subtitle">Locked as Write-Only during active focus blocks. Synthesize and review during Friday leisure windows.</p>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button type="button" class="btn btn-sm btn-secondary" id="toggleVaultLockBtn">Toggle Deep-Work Lock</button>
+          <button type="button" class="btn btn-sm btn-jade" id="synthesizeFridayBtn">Friday Markdown Synthesis</button>
+        </div>
+      </div>
+
+      <div id="vaultDisplayArea"></div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="ideas.js"></script>
+</body>
+</html>

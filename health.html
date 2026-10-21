@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Health</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Health</span>
+    </div>
+    <div class="os-header-meta">
+      <a href="settings.html?from=health" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <!-- Burnout Alert Banner (< 4 hours of sleep) -->
+    <div id="burnoutAlertBanner" class="card" style="display:none;margin-bottom:1.5rem;border-color:var(--danger);background:var(--danger-soft);">
+      <strong style="color:#fca5a5;">Acute Exhaustion Warning:</strong>
+      <p style="font-size:0.9rem;margin-top:0.25rem;">Logged sleep is below 4.0 hours. Ari recommends capping high-friction study blocks today.</p>
+    </div>
+
+    <div class="form-row" style="margin-bottom:1.5rem;">
+      <a href="health-medicine.html" class="tool-card">
+        <div class="tool-card-top">
+          <span class="tool-icon">&#128138;</span>
+          <span class="badge badge-p3" id="medSummaryBadge">0 / 0 Doses</span>
+        </div>
+        <div>
+          <div class="card-title">Medicine Tracker</div>
+          <div class="card-subtitle">Open dedicated daily dose counter</div>
+        </div>
+      </a>
+
+      <a href="health-sick.html" class="tool-card">
+        <div class="tool-card-top">
+          <span class="tool-icon">&#129658;</span>
+          <span class="badge badge-success" id="sickSummaryBadge">Normal Mode</span>
+        </div>
+        <div>
+          <div class="card-title">Sickness Protocol</div>
+          <div class="card-subtitle">Circuit breaker to freeze P1 chains and unlock phone</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Sleep &amp; Energy Log</h1>
+          <p class="card-subtitle">Log sleep hours and optional Samsung Health energy score (0–100)</p>
+        </div>
+      </div>
+
+      <form id="healthMainForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="sleepHoursInput">Sleep Hours</label>
+            <input type="number" id="sleepHoursInput" step="0.25" min="0" max="24" placeholder="e.g., 7.5" required>
+          </div>
+          <div class="form-group">
+            <label for="energyScoreInput">Energy Score (0–100, Optional)</label>
+            <input type="number" id="energyScoreInput" min="0" max="100" placeholder="Synced from Samsung Health">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workoutTypeInput">Workout Type (Optional)</label>
+            <input type="text" id="workoutTypeInput" placeholder="e.g., Strength Training, 5km Run">
+          </div>
+          <div class="form-group" style="justify-content:center;">
+            <label>
+              <input type="checkbox" id="workoutCompletedCheck"> Workout Completed Today
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Health Log</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="health.js"></script>
+</body>
+</html>

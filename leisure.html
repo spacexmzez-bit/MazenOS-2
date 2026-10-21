@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Leisure &amp; Builder Hub</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Leisure</span>
+    </div>
+    <div class="os-header-meta">
+      <a href="settings.html?from=leisure" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <div class="card" style="margin-bottom:1.5rem;border-color:var(--accent-jade);">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Friday Builder &amp; Hobby Day Safeguard</h1>
+          <p class="card-subtitle">Fridays are automatically protected for electronics (Arduino), video games, and creative coding—MacroDroid lock is suspended</p>
+        </div>
+        <span class="badge badge-success" id="fridayProtectionBadge">Protected</span>
+      </div>
+      <div class="form-row" style="margin-top:1rem;">
+        <div class="card" style="background:var(--bg-elevated);">
+          <span class="card-subtitle">Weekly Completed Tasks</span>
+          <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;" id="velocityCompletedCount">0</div>
+        </div>
+        <div class="card" style="background:var(--bg-elevated);">
+          <span class="card-subtitle">Bonus Tasks Cleared Early</span>
+          <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;color:var(--accent-jade);" id="velocityBonusCount">0</div>
+        </div>
+        <div class="card" style="background:var(--bg-elevated);">
+          <span class="card-subtitle">Unlocked Guilt-Free Leisure Quota</span>
+          <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;color:var(--accent-ari);" id="velocityLeisureHours">2.0 hrs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <!-- Focus Session & Hydration Tracker -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Log Focus Block</h2>
+            <p class="card-subtitle">Feeds weekly task velocity and triggers AI Mom hydration reminder at 150+ continuous minutes</p>
+          </div>
+        </div>
+        <form id="focusSessionForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="focusDurationInput">Duration (Minutes)</label>
+              <input type="number" id="focusDurationInput" min="10" max="240" value="45" required>
+            </div>
+            <div class="form-group">
+              <label for="focusTypeSelect">Session Type</label>
+              <select id="focusTypeSelect">
+                <option value="deep_work">Deep Work</option>
+                <option value="pomodoro">Pomodoro</option>
+                <option value="break">Recovery Break</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Record Focus Session</button>
+        </form>
+      </div>
+
+      <!-- Schedule Entertainment & Builder Slot -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Schedule Hobby / Leisure Window</h2>
+            <p class="card-subtitle">Plan Arduino builds, gaming sessions, or Friday builder projects</p>
+          </div>
+        </div>
+        <form id="hobbySlotForm">
+          <div class="form-group">
+            <label for="hobbyTitleInput">Activity / Project</label>
+            <input type="text" id="hobbyTitleInput" placeholder="e.g., Arduino ESP32 Sensor Build / Gaming Session" required>
+          </div>
+          <div class="form-group">
+            <label for="hobbySlotInput">Day &amp; Time Window</label>
+            <input type="text" id="hobbySlotInput" placeholder="Friday 14:00 - 18:00" value="Friday 14:00 - 18:00" required>
+          </div>
+          <button type="submit" class="btn btn-jade">Save Leisure Slot</button>
+        </form>
+        <div id="hobbySlotsList" style="margin-top:1rem;"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="leisure.js"></script>
+</body>
+</html>

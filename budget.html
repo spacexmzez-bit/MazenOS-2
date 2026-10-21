@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Log Expense &amp; Budget</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Log Expense</span>
+    </div>
+    <div class="os-header-meta">
+      <a href="settings.html?from=budget" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <div class="form-row" style="margin-bottom:1.5rem;">
+      <div class="card">
+        <span class="card-subtitle">Current Remaining Balance</span>
+        <div style="font-size:2rem;font-weight:700;margin-top:0.25rem;" id="budgetCurrentBalance">0.00 SAR</div>
+      </div>
+      <div class="card">
+        <span class="card-subtitle">Total Logged Spend</span>
+        <div style="font-size:2rem;font-weight:700;margin-top:0.25rem;color:#fca5a5;" id="budgetTotalSpend">0.00 SAR</div>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-bottom:1.5rem;">
+      <!-- Manual Expense Logger -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Log Expense</h2>
+        </div>
+        <form id="manualExpenseForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="expWalletInput">Wallet / Card Source</label>
+              <input type="text" id="expWalletInput" placeholder="mada *4821 or Cash" value="Card *4821" required>
+            </div>
+            <div class="form-group">
+              <label for="expMerchantInput">Merchant</label>
+              <input type="text" id="expMerchantInput" placeholder="e.g., Camel Step, Tamimi" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="expAmountInput">Amount (SAR)</label>
+              <input type="number" id="expAmountInput" step="0.01" min="0" placeholder="18.00" required>
+            </div>
+            <div class="form-group">
+              <label for="expBalanceInput">Remaining Balance (SAR, Optional)</label>
+              <input type="number" id="expBalanceInput" step="0.01" min="0" placeholder="88.33">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Log Expense</button>
+        </form>
+      </div>
+
+      <!-- Zero-Cost Bank SMS Regex Parser Tester -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Bank SMS Webhook Parser</h2>
+            <p class="card-subtitle">MacroDroid forwards bank SMS alerts to <code>/api/budget/sms</code> at zero token cost</p>
+          </div>
+        </div>
+        <form id="smsParseForm">
+          <div class="form-group">
+            <label for="rawSmsTextarea">Paste or Test Incoming Bank SMS</label>
+            <textarea id="rawSmsTextarea" rows="3" placeholder="Purchase: Card *4821; Amount: SAR 24.50; At: Camel Step Coffee; Balance: SAR 88.33; 2026-10-21 10:15" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary">Parse SMS &amp; Add to Ledger</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Transaction History</h2>
+      </div>
+      <div id="budgetLedgerList"></div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="budget.js"></script>
+</body>
+</html>

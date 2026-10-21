@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Medicine Tracker</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="health.html" class="os-back-link">&larr; Health</a>
+      <span>Medicine Tracker</span>
+    </div>
+    <div class="os-header-meta">
+      <a href="settings.html?from=health" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <div class="card" style="max-width:560px;margin:0 auto;text-align:center;">
+      <h1 class="card-title">Daily Medicine Counter</h1>
+      <p class="card-subtitle" style="margin-bottom:1.5rem;">Resets automatically at 03:00 AM Asia/Riyadh</p>
+
+      <div style="font-size:2.6rem;font-weight:700;margin:1.25rem 0;" id="medCounterDisplay">0 of 0 doses taken</div>
+
+      <div style="display:flex;justify-content:center;gap:0.75rem;margin-bottom:1.75rem;">
+        <button type="button" class="btn btn-primary" id="takeDoseBtn">+ Log Dose Taken</button>
+        <button type="button" class="btn btn-secondary" id="resetDoseBtn">Reset Taken</button>
+      </div>
+
+      <form id="medTargetForm" style="text-align:left;border-top:1px solid var(--border-subtle);padding-top:1.25rem;">
+        <div class="form-group">
+          <label for="medTargetInput">Daily Target Doses</label>
+          <input type="number" id="medTargetInput" min="0" max="20" value="2" required>
+        </div>
+        <button type="submit" class="btn btn-secondary">Update Daily Target</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="health.js"></script>
+</body>
+</html>

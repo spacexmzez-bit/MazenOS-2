@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Settings</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link" id="settingsBackLink">&larr; Back</a>
+      <span>Settings</span>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <!-- Top Section: Contextual Settings -->
+    <section class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title" id="contextSectionTitle">Contextual Tool Settings</h1>
+          <p class="card-subtitle" id="contextSectionSubtitle">Settings tailored to the page you navigated from</p>
+        </div>
+        <select id="contextModuleSelector" style="width:auto;">
+          <option value="dashboard">Dashboard &amp; Rest Window</option>
+          <option value="taskitator">Tasks &amp; Cascading</option>
+          <option value="curry">Syllabus Pacing (Curry)</option>
+          <option value="health">Health &amp; Medicine Defaults</option>
+          <option value="locations">Locations &amp; Commute Threshold</option>
+          <option value="ideas">Idea Vault Timer</option>
+          <option value="diary">Diary Preferences</option>
+          <option value="budget">Budget &amp; Default Card</option>
+          <option value="leisure">Leisure &amp; Friday Protection</option>
+        </select>
+      </div>
+
+      <form id="contextualSettingsForm">
+        <div id="contextualFieldsContainer"></div>
+        <button type="submit" class="btn btn-secondary">Save Contextual Settings</button>
+      </form>
+    </section>
+
+    <!-- Bottom Section: Universal Settings -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Universal System Settings</h2>
+          <p class="card-subtitle">Shared AI provider waterfall, API keys, MacroDroid phone token, and master authentication</p>
+        </div>
+      </div>
+
+      <form id="universalSettingsForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="aiProviderSelect">Active AI Provider</label>
+            <select id="aiProviderSelect">
+              <option value="gemini">Google Gemini (Flash-Lite / Flash Waterfall)</option>
+              <option value="claude">Anthropic Claude (Haiku / Sonnet Pool)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="modelTierSelect">Model Tier</label>
+            <select id="modelTierSelect">
+              <option value="light">Light Tier (Fast, High-Quota Daily Execution)</option>
+              <option value="smart">Smart Tier (Deep Reasoning &amp; Multimodal Audits)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="geminiKeyInput">Gemini API Key</label>
+            <input type="password" id="geminiKeyInput" placeholder="AIzaSy...">
+          </div>
+          <div class="form-group">
+            <label for="claudeKeyInput">Claude API Key</label>
+            <input type="password" id="claudeKeyInput" placeholder="sk-ant-...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="macrodroidTokenInput">MacroDroid Phone Bearer Token</label>
+            <input type="password" id="macrodroidTokenInput" placeholder="Shared token for /status and SMS webhooks">
+          </div>
+          <div class="form-group">
+            <label for="masterPasswordInput">Master Authentication Password</label>
+            <input type="password" id="masterPasswordInput" placeholder="Single bearer auth password across all pages">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Universal Settings</button>
+      </form>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="settings.js"></script>
+</body>
+</html>

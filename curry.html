@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Syllabus (Curry)</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .ratio-bar {
+      display: flex;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      margin: 0.75rem 0;
+    }
+    .ratio-main { background: var(--accent-ari); width: 70%; }
+    .ratio-sub { background: var(--purple); width: 30%; }
+    .unit-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.65rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Syllabus</span>
+    </div>
+    <div class="os-header-meta">
+      <button type="button" class="btn btn-secondary" id="openBulkImportBtn">Import Syllabus JSON</button>
+      <button type="button" class="btn btn-primary" id="openAddUnitBtn">+ Add Unit</button>
+      <a href="settings.html?from=curry" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Focus Allocation &amp; Objective Balancing</h1>
+          <p class="card-subtitle">Main Objectives receive 70% of daily study blocks (P1); Sub Objectives receive 30% (P2/P3)</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-jade" id="proposeDrillBtn">Propose Retrieval Drill</button>
+      </div>
+      <div class="ratio-bar">
+        <div class="ratio-main" title="Main Objectives (70%)"></div>
+        <div class="ratio-sub" title="Sub Objectives (30%)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-secondary);">
+        <span>Main Objectives: 65–75% Daily Focus (P1)</span>
+        <span>Sub Objectives: 25–35% Daily Focus (P2/P3)</span>
+      </div>
+    </div>
+
+    <!-- Consensual Testing Proposal Banner -->
+    <div class="card" id="drillProposalCard" style="display:none;margin-bottom:1.5rem;border-color:var(--accent-jade);">
+      <div class="card-header">
+        <h2 class="card-title">Spaced Retrieval Drill Proposal</h2>
+      </div>
+      <p class="card-subtitle" id="drillProposalText" style="margin-bottom:1rem;"></p>
+      <div style="display:flex;gap:0.65rem;">
+        <button type="button" class="btn btn-jade" id="acceptDrillBtn">Confirm &amp; Add to Today's Tasks</button>
+        <button type="button" class="btn btn-secondary" id="declineDrillBtn">Dismiss</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Main Objectives (P1 Focus)</h2>
+        </div>
+        <div id="mainObjectivesList"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Sub Objectives (P2/P3 Queue)</h2>
+        </div>
+        <div id="subObjectivesList"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Add Unit Modal -->
+  <div class="modal-backdrop" id="addUnitModal">
+    <div class="modal-sheet">
+      <div class="card-header">
+        <h2 class="card-title">Add Curriculum Unit</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="closeUnitModalBtn">Close</button>
+      </div>
+      <form id="addUnitForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="unitExamInput">Exam / Subject Name</label>
+            <input type="text" id="unitExamInput" placeholder="e.g., Biology 101" required>
+          </div>
+          <div class="form-group">
+            <label for="unitNumInput">Unit Number</label>
+            <input type="number" id="unitNumInput" min="1" value="1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="unitTopicInput">Topic Title</label>
+          <input type="text" id="unitTopicInput" placeholder="e.g., Cellular Respiration & ATP Synthesis" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="unitDiffInput">Difficulty (1–5)</label>
+            <input type="number" id="unitDiffInput" min="1" max="5" value="3" required>
+          </div>
+          <div class="form-group">
+            <label for="unitHoursInput">Estimated Hours</label>
+            <input type="number" id="unitHoursInput" step="0.5" min="0.5" value="2.0" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="unitTargetDate">Target Completion / Exam Date</label>
+            <input type="date" id="unitTargetDate">
+          </div>
+          <div class="form-group" style="justify-content:center;">
+            <label>
+              <input type="checkbox" id="unitMainCheck"> Set as Main Objective (70% Focus)
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
+          <button type="submit" class="btn btn-primary">Save Unit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Zero-Cost External LLM Copy-Paste Import Modal -->
+  <div class="modal-backdrop" id="bulkImportModal">
+    <div class="modal-sheet">
+      <div class="card-header">
+        <h2 class="card-title">Zero-Cost Syllabus Decomposition Import</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="closeImportModalBtn">Close</button>
+      </div>
+      <p class="card-subtitle" style="margin-bottom:0.75rem;">
+        Copy this extraction prompt into an external LLM (Gemini Pro / ChatGPT Plus) with your syllabus, then paste the resulting JSON array below:
+      </p>
+      <textarea readonly rows="3" style="margin-bottom:0.85rem;font-family:var(--font-mono);font-size:0.8rem;">Extract all syllabus units as a JSON array with keys: exam_name, unit_number, topic_title, difficulty_level (1-5), estimated_hours, is_main_objective (boolean), target_completion_date (YYYY-MM-DD).</textarea>
+      <form id="bulkImportForm">
+        <div class="form-group">
+          <label for="bulkJsonTextarea">Paste Extracted JSON Array</label>
+          <textarea id="bulkJsonTextarea" rows="5" placeholder='[{"exam_name":"Physics","unit_number":1,"topic_title":"Kinematics","difficulty_level":4,"estimated_hours":3,"is_main_objective":true}]' required></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
+          <button type="submit" class="btn btn-primary">Import Units</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="curry.js"></script>
+</body>
+</html>

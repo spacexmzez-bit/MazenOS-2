@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Sickness Protocol</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="health.html" class="os-back-link">&larr; Health</a>
+      <span>Sickness Protocol</span>
+    </div>
+    <div class="os-header-meta">
+      <a href="settings.html?from=health" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <div class="card" style="max-width:620px;margin:0 auto;">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Sickness Protocol Circuit Breaker</h1>
+          <p class="card-subtitle">Activating Sickness Mode freezes academic P1 chains, moves intense tasks to backlog, and unlocks MacroDroid</p>
+        </div>
+        <span class="badge badge-success" id="sickStatusBadge">Inactive</span>
+      </div>
+
+      <form id="sicknessForm">
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.6rem;font-size:1rem;color:var(--text-primary);cursor:pointer;">
+            <input type="checkbox" id="isSickToggle" style="width:20px;height:20px;">
+            <span>Activate Sickness Mode (Recovery Priority)</span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="sicknessNotesInput">Symptoms &amp; Recovery Notes</label>
+          <textarea id="sicknessNotesInput" rows="3" placeholder="Log symptoms, rest plan, or doctor instructions..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger" id="saveSicknessBtn">Apply Sickness Protocol</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="health.js"></script>
+</body>
+</html>

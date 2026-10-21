@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Locations</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Locations</span>
+    </div>
+    <div class="os-header-meta">
+      <button type="button" class="btn btn-primary" id="openNewLocModalBtn">+ Add Location</button>
+      <a href="settings.html?from=locations" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <!-- Commute Friction Gate Card -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Commute Friction Gate</h1>
+          <p class="card-subtitle">Ari compares round-trip travel time against your planned focus block to prevent losing study hours to transit</p>
+        </div>
+      </div>
+      <form id="commuteGateForm" class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="gateLocationSelect">Select Location</label>
+          <select id="gateLocationSelect">
+            <option value="">Choose saved workspace...</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="gateFocusMinsInput">Planned Study Block (Minutes)</label>
+          <input type="number" id="gateFocusMinsInput" min="15" max="600" value="120" required>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">Evaluate Commute</button>
+        </div>
+      </form>
+      <div id="commuteVerdictBox" style="display:none;margin-top:1rem;" class="card"></div>
+    </div>
+
+    <div class="tool-grid" id="locationsGrid"></div>
+  </main>
+
+  <!-- Add Location Modal -->
+  <div class="modal-backdrop" id="locationModal">
+    <div class="modal-sheet">
+      <div class="card-header">
+        <h2 class="card-title">Add Study Location</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="closeLocationModalBtn">Close</button>
+      </div>
+      <form id="locationForm">
+        <div class="form-group">
+          <label for="locNameInput">Workspace Name</label>
+          <input type="text" id="locNameInput" placeholder="e.g., King Fahad National Library / Camel Step" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="locTypeInput">Service Type</label>
+            <input type="text" id="locTypeInput" placeholder="Cafe, Library, Co-working" value="Cafe">
+          </div>
+          <div class="form-group">
+            <label for="locQuietInput">Quietness Rating (1–5)</label>
+            <input type="number" id="locQuietInput" min="1" max="5" value="4" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="locCommuteInput">One-Way Commute (Minutes)</label>
+            <input type="number" id="locCommuteInput" min="1" max="180" value="15" required>
+          </div>
+          <div class="form-group">
+            <label for="locAvgCostInput">Average Cost in SAR (Optional if adding items)</label>
+            <input type="number" id="locAvgCostInput" step="0.5" min="0" placeholder="e.g., 22">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="locMapUrlInput">Google Maps Link (Optional)</label>
+          <input type="url" id="locMapUrlInput" placeholder="https://maps.google.com/...">
+        </div>
+        <div class="form-group">
+          <label for="locNotesInput">Notes (Outlets, Wi-Fi, Seating)</label>
+          <textarea id="locNotesInput" rows="2" placeholder="Quiet upstairs seating, strong outlets..."></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
+          <button type="submit" class="btn btn-primary">Save Location</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Item Price Popup -->
+  <div class="modal-backdrop" id="addItemModal">
+    <div class="modal-sheet">
+      <div class="card-header">
+        <h2 class="card-title">Add Menu Item Price</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="closeAddItemModalBtn">Close</button>
+      </div>
+      <p class="card-subtitle" id="addItemLocationLabel" style="margin-bottom:1rem;"></p>
+      <form id="addItemForm">
+        <input type="hidden" id="addItemLocationId">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="itemNameInput">Item Name</label>
+            <input type="text" id="itemNameInput" placeholder="e.g., Cold Brew" required>
+          </div>
+          <div class="form-group">
+            <label for="itemPriceInput">Price (SAR)</label>
+            <input type="number" id="itemPriceInput" step="0.5" min="0" placeholder="18" required>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
+          <button type="submit" class="btn btn-primary">Add Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="locations.js"></script>
+</body>
+</html>

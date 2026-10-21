@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Diary</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.65rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-bottom: none;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
+    .diary-canvas {
+      min-height: 240px;
+      padding: 1rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      color: var(--text-primary);
+      outline: none;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+    .diary-canvas:focus {
+      border-color: var(--border-focus);
+    }
+  </style>
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Diary</span>
+    </div>
+    <div class="os-header-meta">
+      <button type="button" class="btn btn-jade" id="openDiaryCanvasBtn">Write Today's Diary</button>
+      <a href="settings.html?from=diary" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <main class="os-container">
+    <!-- Focused Writing Canvas -->
+    <div class="card" id="diaryWriterCard" style="display:none;margin-bottom:1.5rem;">
+      <div class="card-header">
+        <div>
+          <h1 class="card-title">Today's Journal Entry</h1>
+          <p class="card-subtitle">Saved to D1 and accessible to Jade during weekly debriefs</p>
+        </div>
+      </div>
+
+      <div class="editor-toolbar">
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="bold"><strong>B</strong></button>
+        <button type="button" class="btn btn-sm btn-secondary" data-cmd="italic"><em>I</em></button>
+        <button type="button" class="btn btn-sm btn-secondary" data-align="left">Align Left</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-align="center">Center</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-align="right">Align Right</button>
+        <select id="diaryFontSizeSelect" style="width:auto;padding:0.3rem 0.6rem;">
+          <option value="15px">Normal (15px)</option>
+          <option value="18px">Large (18px)</option>
+          <option value="21px">Title (21px)</option>
+        </select>
+        <select id="diaryMoodSelect" style="width:auto;padding:0.3rem 0.6rem;margin-left:auto;">
+          <option value="Focused">Mood: Focused</option>
+          <option value="Grounded">Mood: Grounded</option>
+          <option value="Grateful">Mood: Grateful</option>
+          <option value="Tired">Mood: Tired</option>
+          <option value="Stressed">Mood: Stressed</option>
+        </select>
+      </div>
+
+      <div id="diaryEditorCanvas" class="diary-canvas" contenteditable="true" aria-label="Diary Text Editor"></div>
+
+      <div style="display:flex;justify-content:flex-end;gap:0.65rem;margin-top:1rem;">
+        <button type="button" class="btn btn-secondary" id="closeDiaryCanvasBtn">Cancel</button>
+        <button type="button" class="btn btn-jade" id="saveDiaryEntryBtn">Save Entry</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Past Entries</h2>
+      </div>
+      <div id="diaryEntriesList"></div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="diary.js"></script>
+</body>
+</html>

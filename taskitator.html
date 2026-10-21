@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Tasks</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .sidebar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.9rem;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+    }
+    .sidebar-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .task-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 1rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.75rem;
+    }
+    .task-item-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .task-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="os-header">
+    <div class="os-brand">
+      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
+      <span>Tasks</span>
+    </div>
+    <div class="os-header-meta">
+      <button type="button" class="btn btn-primary" id="openNewTaskModalBtn">+ New Task</button>
+      <a href="settings.html?from=taskitator" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+    </div>
+  </header>
+
+  <div class="os-split-layout">
+    <aside class="card">
+      <nav class="sidebar-nav" aria-label="Task Views">
+        <button type="button" class="sidebar-btn active" data-view="today">
+          <span>Today's Focus</span>
+          <span class="badge badge-p1" id="navCountToday">0</span>
+        </button>
+        <button type="button" class="sidebar-btn" data-view="matrix">
+          <span>Eisenhower Matrix</span>
+          <span class="badge badge-p3" id="navCountMatrix">0</span>
+        </button>
+        <button type="button" class="sidebar-btn" data-view="upcoming">
+          <span>Upcoming</span>
+          <span class="badge badge-p2" id="navCountUpcoming">0</span>
+        </button>
+        <button type="button" class="sidebar-btn" data-view="completed">
+          <span>Completed</span>
+          <span class="badge badge-success" id="navCountCompleted">0</span>
+        </button>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h1 class="card-title" id="currentViewTitle">Today's Focus</h1>
+            <p class="card-subtitle" id="currentViewSubtitle">Priority tasks, consecutive dependencies, and bonus pulls</p>
+          </div>
+        </div>
+        <div id="tasksViewport"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Task Creation & Editing Modal -->
+  <div class="modal-backdrop" id="taskModal">
+    <div class="modal-sheet">
+      <div class="card-header">
+        <h2 class="card-title" id="taskModalTitle">New Task</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="closeTaskModalBtn">Close</button>
+      </div>
+      <form id="taskForm">
+        <input type="hidden" id="taskIdInput">
+        <div class="form-group">
+          <label for="taskTitleInput">Title</label>
+          <input type="text" id="taskTitleInput" placeholder="e.g., Complete Calculus Unit 3 Problem Set" required>
+        </div>
+        <div class="form-group">
+          <label for="taskDescInput">Description</label>
+          <textarea id="taskDescInput" rows="2" placeholder="Specific scope and notes..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskPrioritySelect">Priority</label>
+            <select id="taskPrioritySelect">
+              <option value="1">P1 — Urgent &amp; Important</option>
+              <option value="2">P2 — Important, Not Urgent</option>
+              <option value="3">P3 — Urgent, Not Important</option>
+              <option value="4">P4 — Backlog</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="taskDurationInput">Estimated Minutes</label>
+            <input type="number" id="taskDurationInput" min="5" max="480" value="45">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="taskDueInput">Due Date &amp; Time</label>
+          <input type="datetime-local" id="taskDueInput">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="taskConsecutiveCheck"> Consecutive Task
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="taskBonusCheck"> Bonus Task (Zero Penalty)
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="taskVideoCheck"> Video Required (NewPipe)
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="taskParentSelect">Parent Prerequisite Task (Optional)</label>
+          <select id="taskParentSelect">
+            <option value="">None</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="taskAuditCriteriaInput">AI Proof Criteria (Optional)</label>
+          <input type="text" id="taskAuditCriteriaInput" placeholder="e.g., Photo of handwritten solution page with boxed final answers">
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;margin-top:1rem;">
+          <button type="button" class="btn btn-danger" id="deleteTaskBtn" style="display:none;margin-right:auto;">Delete</button>
+          <button type="button" class="btn btn-secondary" id="cancelTaskBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Multimodal Proof Upload Modal -->
+  <div class="modal-backdrop" id="proofAuditModal">
+    <div class="modal-sheet">
+      <div class="card-header">
+        <h2 class="card-title">Submit Completion Proof</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="closeProofModalBtn">Close</button>
+      </div>
+      <p class="card-subtitle" id="proofTaskTitle" style="margin-bottom:0.5rem;"></p>
+      <p class="card-subtitle" id="proofCriteriaDisplay" style="margin-bottom:1rem;color:var(--text-primary);"></p>
+      <form id="proofAuditForm">
+        <input type="hidden" id="proofTaskId">
+        <div class="form-group">
+          <label for="proofFileInput">Upload Photo or PDF Proof</label>
+          <input type="file" id="proofFileInput" accept="image/*,application/pdf" required>
+        </div>
+        <div id="proofResultBox" style="display:none;margin-bottom:1rem;" class="card"></div>
+        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
+          <button type="submit" class="btn btn-primary" id="submitProofBtn">Verify Proof with Ari</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script type="module" src="taskitator.js"></script>
+</body>
+</html>
