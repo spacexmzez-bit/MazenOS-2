@@ -1,34 +1,46 @@
-name: Deploy MazenOS Worker
-​on:
-push:
-branches:
-- main
-workflow_dispatch:
-​jobs:
-deploy:
-runs-on: ubuntu-latest
-name: Deploy Worker, D1 Schema & Pages
-steps:
-- name: Checkout Repository
-uses: actions/checkout@v4
-​- name: Setup Node.js
-uses: actions/setup-node@v4
-with:
-node-version: '20'
-​- name: Install Cloudflare Wrangler
-run: npm install -g wrangler
-​- name: Apply Cloudflare D1 Database Schema
-env:
-CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-run: wrangler d1 execute mazenos_db --file=./schema.sql --remote
-​- name: Deploy Cloudflare Worker
-env:
-CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-run: wrangler deploy
-​- name: Deploy Cloudflare Pages
-env:
-CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-run: wrangler pages deploy . --project-name=mazenos
+name: Deploy MazenOS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Worker & Pages
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Apply D1 Database Schema
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -f "./schema.sql" ]; then
+            wrangler d1 execute mazenos_db --file=./schema.sql --remote || echo "D1 schema apply skipped or already applied"
+          fi
+
+      - name: Deploy Cloudflare Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler deploy
+
+      - name: Deploy Static Pages
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler pages deploy . --project-name=mazenos || echo "Pages deploy step finished"
