@@ -107,6 +107,19 @@ async function fetchSettings() {
   document.getElementById('claudeKeyInput').value = storedSettings.claude_api_key || '';
   document.getElementById('macrodroidTokenInput').value = storedSettings.macrodroid_token || '';
   document.getElementById('masterPasswordInput').value = storedSettings.master_password || '';
+  document.getElementById('dailyLimitInput').value = storedSettings.daily_ai_limit !== undefined ? storedSettings.daily_ai_limit : '50';
+  document.getElementById('monthlyLimitInput').value = storedSettings.monthly_ai_limit !== undefined ? storedSettings.monthly_ai_limit : '1000';
+
+  try {
+    const uRes = await fetch('/api/usage', { headers: getAuthHeaders() });
+    if (uRes.ok) {
+      const uData = await uRes.json();
+      const dLim = uData.daily_limit === 0 ? 'Unlimited' : uData.daily_limit;
+      const mLim = uData.monthly_limit === 0 ? 'Unlimited' : uData.monthly_limit;
+      document.getElementById('liveDailyUsageBadge').textContent = `Today: ${uData.today_count} / ${dLim}`;
+      document.getElementById('liveMonthlyUsageBadge').textContent = `Month: ${uData.month_count} / ${mLim}`;
+    }
+  } catch {}
 
   const params = new URLSearchParams(window.location.search);
   const from = params.get('from') || 'dashboard';
@@ -169,7 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
       gemini_api_key: document.getElementById('geminiKeyInput').value.trim(),
       claude_api_key: document.getElementById('claudeKeyInput').value.trim(),
       macrodroid_token: document.getElementById('macrodroidTokenInput').value.trim(),
-      master_password: document.getElementById('masterPasswordInput').value.trim()
+      master_password: document.getElementById('masterPasswordInput').value.trim(),
+      daily_ai_limit: document.getElementById('dailyLimitInput').value.trim(),
+      monthly_ai_limit: document.getElementById('monthlyLimitInput').value.trim()
     };
     await persistSettings(updates);
     showToast('Universal system settings saved.');

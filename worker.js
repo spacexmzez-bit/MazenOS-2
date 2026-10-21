@@ -243,6 +243,64 @@ async function getHardwareStatus(env) {
   };
 }
 
+
+/**
+ * Custom AI Credit Protection: Enforces User-Configured Daily & Monthly Borders
+ */
+async function checkApiUsageLimits(env, endpoint = 'chat') {
+  const riyadh = getRiyadhDateParts();
+  const monthPrefix = riyadh.dateStr.slice(0, 7); // YYYY-MM
+
+  // Fetch user-defined limits from system_settings
+  const limitSettings = await env.DB.prepare(
+    `SELECT key, value FROM system_settings WHERE key IN ('daily_ai_limit', 'monthly_ai_limit')`
+  ).all();
+
+  const limits = { daily_ai_limit: 50, monthly_ai_limit: 1000 };
+  for (const r of (limitSettings.results || [])) {
+    if (r.value !== '' && r.value !== null) limits[r.key] = Number(r.value);
+  }
+
+  // Count usage today
+  const todayRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM api_usage_logs WHERE date(created_at) = ?`
+  ).bind(riyadh.dateStr).first();
+  const todayCount = todayRow ? Number(todayRow.count) : 0;
+
+  // Count usage this month
+  const monthRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM api_usage_logs WHERE strftime('%Y-%m', created_at) = ?`
+  ).bind(monthPrefix).first();
+  const monthCount = monthRow ? Number(monthRow.count) : 0;
+
+  if (limits.daily_ai_limit > 0 && todayCount >= limits.daily_ai_limit) {
+    const err = new Error(`Daily AI limit reached (${todayCount}/${limits.daily_ai_limit}). Adjust border in Settings to continue.`);
+    err.code = 'DAILY_LIMIT_EXCEEDED';
+    err.today_count = todayCount;
+    err.daily_limit = limits.daily_ai_limit;
+    throw err;
+  }
+
+  if (limits.monthly_ai_limit > 0 && monthCount >= limits.monthly_ai_limit) {
+    const err = new Error(`Monthly AI limit reached (${monthCount}/${limits.monthly_ai_limit}). Adjust border in Settings to continue.`);
+    err.code = 'MONTHLY_LIMIT_EXCEEDED';
+    err.month_count = monthCount;
+    err.monthly_limit = limits.monthly_ai_limit;
+    throw err;
+  }
+
+  return { today_count: todayCount, daily_limit: limits.daily_ai_limit, month_count: monthCount, monthly_limit: limits.monthly_ai_limit };
+}
+
+async function logApiUsage(env, provider, model, endpoint) {
+  try {
+    const id = `use_${crypto.randomUUID().slice(0, 8)}`;
+    await env.DB.prepare(
+      `INSERT INTO api_usage_logs (id, provider, model, endpoint) VALUES (?, ?, ?, ?)`
+    ).bind(id, provider || 'unknown', model || 'unknown', endpoint || 'chat').run();
+  } catch {}
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
@@ -268,6 +326,12 @@ export default {
     }
 
     try {
+            // 1b. AI Credit Protection & Usage Stats Endpoint
+      if (path === '/api/usage' && method === 'GET') {
+        const usage = await checkApiUsageLimits(env, 'status').catch(e => e);
+        return jsonResponse(usage);
+      }
+
       // 1. Dynamic State Summary
       if (path === '/api/state' && method === 'GET') {
         const state = await buildCompactState(env);
@@ -297,7 +361,21 @@ export default {
         return jsonResponse({ messages: rows.results || [] });
       }
 
-      if (path === '/api/chat' && method === 'POST') {
+            if (path === '/api/chat' && method === 'POST') {
+        // Enforce user-defined borders before calling external AI APIs
+        try {
+          await checkApiUsageLimits(env, 'chat');
+        } catch (limitErr) {
+          return jsonResponse({
+            error: limitErr.message,
+            intercept_code: limitErr.code,
+            today_count: limitErr.today_count,
+            daily_limit: limitErr.daily_limit,
+            month_count: limitErr.month_count,
+            monthly_limit: limitErr.monthly_limit
+          }, 429);
+        }
+
         const body = await request.json();
         const sessionId = body.session_id || 'default_session';
         const agent = body.agent === 'jade' ? 'jade' : 'ari';
@@ -325,6 +403,9 @@ export default {
           await env.DB.prepare(
             `INSERT INTO chat_messages (id, session_id, agent, sender, message_text) VALUES (?, ?, ?, 'assistant', ?)`
           ).bind(assistantMsgId, sessionId, agent, aiRes.reply).run();
+
+          await logApiUsage(env, aiRes.provider, aiRes.modelUsed, 'chat');
+
 
           return jsonResponse({
             reply: aiRes.reply,
@@ -471,12 +552,48 @@ export default {
           return jsonResponse({ error: 'Proof file (photo or PDF) is required for audit.' }, 400);
         }
 
+        // Check usage limits before invoking external AI APIs
+        try {
+          await checkApiUsageLimits(env, 'proof');
+        } catch (limitErr) {
+          return jsonResponse({
+            error: limitErr.message,
+            intercept_code: limitErr.code,
+            today_count: limitErr.today_count,
+            daily_limit: limitErr.daily_limit,
+            month_count: limitErr.month_count,
+            monthly_limit: limitErr.monthly_limit
+          }, 429);
+        }
+
+        // Check usage limits before invoking external AI APIs
+        try {
+          await checkApiUsageLimits(env, 'proof');
+        } catch (limitErr) {
+          return jsonResponse({
+            error: limitErr.message,
+            intercept_code: limitErr.code,
+            today_count: limitErr.today_count,
+            daily_limit: limitErr.daily_limit,
+            month_count: limitErr.month_count,
+            monthly_limit: limitErr.monthly_limit
+          }, 429);
+        }
+
         // Zero-Simulation Policy: fails closed if AI evaluation fails
         const evaluation = await evaluateTaskProof(env, {
           task,
           mimeType: body.mime_type,
           base64Data: body.base64_data
         });
+
+        if (evaluation.provider && evaluation.modelUsed) {
+          await logApiUsage(env, evaluation.provider, evaluation.modelUsed, 'proof');
+        }
+
+        if (evaluation.provider && evaluation.modelUsed) {
+          await logApiUsage(env, evaluation.provider, evaluation.modelUsed, 'proof');
+        }
 
         const receiptId = `aud_${crypto.randomUUID().slice(0, 8)}`;
         await env.DB.prepare(
@@ -851,10 +968,24 @@ export default {
       // 11. NewPipe Media Audit Webhook
       if (path === '/api/audit/media' && method === 'POST') {
         const b = await request.json();
+        try {
+          await checkApiUsageLimits(env, 'media');
+        } catch (limitErr) {
+          return jsonResponse({
+            allowed: false,
+            device_unlocked: false,
+            reason: 
+          }, 429);
+        }
+
         const verdict = await evaluateMediaRelevance(env, {
           videoTitle: b.video_title || '',
           channelName: b.channel_name || ''
         });
+
+        if (verdict.provider && verdict.modelUsed) {
+          await logApiUsage(env, verdict.provider, verdict.modelUsed, 'media');
+        }
         return jsonResponse({
           allowed: verdict.allowed,
           device_unlocked: verdict.allowed,

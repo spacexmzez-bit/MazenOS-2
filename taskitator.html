@@ -3,173 +3,746 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MazenOS — Tasks</title>
-  <link rel="stylesheet" href="shared.css">
+  <title>MazenOS — Tasks (Taskitator)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    .sidebar-nav {
+    :root {
+      --bg-primary: #0a0d14;
+      --bg-surface: #111622;
+      --bg-elevated: #182030;
+      --bg-hover: #1f2a3f;
+      --border-subtle: #26334d;
+      --border-focus: #3b82f6;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      overflow-x: hidden;
     }
-    .sidebar-btn {
+
+    /* Top Navigation Bar */
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(17, 22, 34, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.6rem 1rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.65rem 0.9rem;
-      border-radius: var(--radius-sm);
+      gap: 0.75rem;
+    }
+
+    .nav-left, .nav-center, .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-main);
       background: transparent;
-      border: 1px solid transparent;
-      color: var(--text-secondary);
-      font-weight: 500;
+      border: none;
       cursor: pointer;
-      text-align: left;
-      font-family: inherit;
     }
-    .sidebar-btn.active {
+
+    .back-dashboard-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
       background: var(--bg-elevated);
-      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .back-dashboard-link:hover {
+      color: var(--text-main);
       border-color: var(--border-focus);
+      background: var(--bg-hover);
     }
-    .matrix-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1rem;
+
+    /* Pomodoro Timer Bar in Header */
+    .pomodoro-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
     }
-    .task-item {
+
+    .pomo-time { font-weight: 700; color: var(--accent-amber); min-width: 48px; text-align: center; }
+    .pomo-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+    }
+    .pomo-btn:hover { background: var(--bg-hover); }
+    .pomo-mode-select {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.4rem;
+      font-family: var(--font-sans);
+    }
+
+    /* Search & Action Controls */
+    .search-input {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.84rem;
+      width: 170px;
+    }
+    .search-input:focus { outline: none; border-color: var(--border-focus); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--accent-blue); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-secondary { background: var(--bg-elevated); color: var(--text-main); border-color: var(--border-subtle); }
+    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-focus); }
+    .btn-danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
+    .btn-danger:hover { background: var(--accent-red); color: #fff; }
+    .btn-sm { padding: 0.25rem 0.55rem; font-size: 0.78rem; }
+
+    /* Sliding Navigation Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 60;
+      display: none;
+    }
+    .drawer-backdrop.open { display: block; }
+
+    .drawer-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 260px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      z-index: 70;
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease-in-out;
+    }
+    .drawer-panel.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.75rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .drawer-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .drawer-link:hover, .drawer-link.active {
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    /* Main Container & View Switcher */
+    .app-main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .view-container { display: none; }
+    .view-container.active { display: block; }
+
+    /* Task Tree & Node Layout */
+    .tree-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
       padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .task-node {
+      display: flex;
+      flex-direction: column;
       background: var(--bg-elevated);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+      transition: border-color 0.15s ease;
     }
-    .task-item-top {
+    .task-node:hover { border-color: var(--border-focus); }
+    .task-node.completed { opacity: 0.6; }
+
+    .task-row {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.5rem;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 0.85rem;
     }
-    .task-actions {
+
+    .task-row input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      accent-color: var(--accent-blue);
+    }
+
+    .tree-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      width: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .task-title-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .task-meta-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-p1 { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .badge-p2 { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-p3 { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.35); }
+    .badge-p4 { background: rgba(148, 163, 184, 0.12); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+    .badge-project { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.35); }
+    .badge-tag { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+    .badge-proof { background: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+
+    .node-children {
+      margin-left: 1.5rem;
+      padding-left: 0.5rem;
+      border-left: 2px dashed var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Batch Selection Bar */
+    .batch-bar {
+      position: sticky;
+      bottom: 1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--accent-blue);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      z-index: 50;
+      margin-top: 1rem;
+    }
+    .batch-bar.active { display: flex; }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 80;
+      padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-sheet {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
+    }
+
+    label { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); }
+
+    input[type="text"], input[type="number"], input[type="datetime-local"], select, textarea {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.88rem;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-focus); }
+
+    /* In-Drawer Ari Copilot Panel */
+    .copilot-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 320px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-subtle);
+      z-index: 70;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.22s ease-in-out;
+    }
+    .copilot-panel.open { transform: translateX(0); }
+
+    .copilot-chat-stream {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .copilot-msg {
+      max-width: 85%;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+    .copilot-user { align-self: flex-end; background: var(--bg-elevated); border: 1px solid var(--border-subtle); }
+    .copilot-ari { align-self: flex-start; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); }
+
+    /* Calendar Grid */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+    .calendar-day-head {
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding: 0.35rem 0;
+    }
+    .calendar-cell {
+      min-height: 85px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .calendar-cell:hover { border-color: var(--border-focus); }
+    .calendar-cell.today { border-color: var(--accent-blue); background: var(--bg-hover); }
+
+    /* Toast */
+    .toast-box {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-focus);
+      color: var(--text-main);
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      font-size: 0.86rem;
+      display: none;
+      z-index: 99;
     }
   </style>
 </head>
 <body>
-  <header class="os-header">
-    <div class="os-brand">
-      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
-      <span>Tasks</span>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-navbar">
+    <div class="nav-left">
+      <button type="button" class="btn btn-secondary btn-sm" id="toggleDrawerBtn" title="Menu" aria-label="Open Navigation Drawer">&#9776;</button>
+      <button type="button" class="brand-btn" id="brandTitleBtn">Taskitator</button>
+      <a href="index.html" class="back-dashboard-link">&larr; MazenOS Dashboard</a>
     </div>
-    <div class="os-header-meta">
-      <button type="button" class="btn btn-primary" id="openNewTaskModalBtn">+ New Task</button>
-      <a href="settings.html?from=taskitator" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
+
+    <!-- Pomodoro Timer Bar -->
+    <div class="nav-center">
+      <div class="pomodoro-bar">
+        <span class="pomo-time" id="pomoDisplay">25:00</span>
+        <button type="button" class="pomo-btn" id="pomoToggleBtn" title="Play/Pause">&#9654;</button>
+        <button type="button" class="pomo-btn" id="pomoResetBtn" title="Reset">&#8635;</button>
+        <select id="pomoModeSelect" class="pomo-mode-select">
+          <option value="25">25m Focus</option>
+          <option value="50">50m Deep</option>
+          <option value="5">5m Break</option>
+          <option value="15">15m Long Break</option>
+        </select>
+        <span style="font-size:0.75rem;color:var(--text-muted);" id="pomoSessionCount">&#127813; 0</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <input type="text" id="taskSearchInput" class="search-input" placeholder="Search tasks...">
+      <button type="button" class="btn btn-secondary btn-sm" id="toggleSelectionModeBtn">Select</button>
+      <button type="button" class="btn btn-primary btn-sm" id="openNewTaskBtn">+ New Task</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="toggleCopilotBtn" title="Ari AI Copilot">&#129302; Ari</button>
     </div>
   </header>
 
-  <div class="os-split-layout">
-    <aside class="card">
-      <nav class="sidebar-nav" aria-label="Task Views">
-        <button type="button" class="sidebar-btn active" data-view="today">
-          <span>Today's Focus</span>
-          <span class="badge badge-p1" id="navCountToday">0</span>
-        </button>
-        <button type="button" class="sidebar-btn" data-view="matrix">
-          <span>Eisenhower Matrix</span>
-          <span class="badge badge-p3" id="navCountMatrix">0</span>
-        </button>
-        <button type="button" class="sidebar-btn" data-view="upcoming">
-          <span>Upcoming</span>
-          <span class="badge badge-p2" id="navCountUpcoming">0</span>
-        </button>
-        <button type="button" class="sidebar-btn" data-view="completed">
-          <span>Completed</span>
-          <span class="badge badge-success" id="navCountCompleted">0</span>
-        </button>
-      </nav>
-    </aside>
+  <!-- Sliding Drawer Sidebar -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer-panel" id="drawerPanel">
+    <div class="drawer-header">
+      <strong>Taskitator</strong>
+      <button type="button" class="btn btn-secondary btn-sm" id="closeDrawerBtn">&times;</button>
+    </div>
+    <nav class="drawer-nav" aria-label="Views">
+      <a class="drawer-link active" data-view="today">&#128197; Today</a>
+      <a class="drawer-link" data-view="general">&#128203; General Tasks</a>
+      <a class="drawer-link" data-view="calendar">&#128198; Calendar</a>
+      <a class="drawer-link" data-view="projects">&#128193; Projects</a>
+      <a class="drawer-link" data-view="stats">&#128202; Stats</a>
+      <a class="drawer-link" data-view="trash">&#128465; Trash</a>
+      <a href="settings.html?from=taskitator" class="drawer-link" style="margin-top:auto;">&#9881; Settings</a>
+    </nav>
+  </aside>
 
-    <main>
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h1 class="card-title" id="currentViewTitle">Today's Focus</h1>
-            <p class="card-subtitle" id="currentViewSubtitle">Priority tasks, consecutive dependencies, and bonus pulls</p>
+  <!-- In-Drawer Ari Copilot Panel -->
+  <aside class="copilot-panel" id="copilotPanel">
+    <div class="drawer-header">
+      <div>
+        <strong>Ari — Execution Copilot</strong>
+        <p style="font-size:0.75rem;color:var(--text-muted);">Disciplined scheduling &amp; Pomodoro pacing</p>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" id="closeCopilotBtn">&times;</button>
+    </div>
+    <div class="copilot-chat-stream" id="copilotStream"></div>
+    <form id="copilotForm" style="display:flex;padding:0.75rem;gap:0.4rem;border-top:1px solid var(--border-subtle);">
+      <input type="text" id="copilotInput" placeholder="Ask Ari about task pacing..." style="flex:1;" required>
+      <button type="submit" class="btn btn-primary btn-sm">Send</button>
+    </form>
+  </aside>
+
+  <!-- Main Viewports -->
+  <main class="app-main">
+
+    <!-- VIEW 1: TODAY (#today) -->
+    <div id="view-today" class="view-container active">
+      <div class="tree-card" style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:1.15rem;font-weight:700;">Today's Execution Queue</h2>
+          <p style="font-size:0.84rem;color:var(--text-muted);" id="todaySummaryStats">Loading...</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="collapseAllBtn">Collapse All</button>
+      </div>
+      <div id="todayTaskTree"></div>
+    </div>
+
+    <!-- VIEW 2: GENERAL TASKS (#general) -->
+    <div id="view-general" class="view-container">
+      <div class="tree-card" style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:1.15rem;font-weight:700;">General Master Task Tree</h2>
+          <p style="font-size:0.84rem;color:var(--text-muted);">All tasks, nested subtask trees, and backlog items</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="expandAllBtn">Expand All</button>
+      </div>
+      <div id="generalTaskTree"></div>
+    </div>
+
+    <!-- VIEW 3: CALENDAR (#calendar) -->
+    <div id="view-calendar" class="view-container">
+      <div class="tree-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h2 style="font-size:1.15rem;font-weight:700;" id="calendarMonthTitle">October 2026</h2>
+          <div style="display:flex;gap:0.35rem;">
+            <button type="button" class="btn btn-secondary btn-sm" id="calPrevBtn">&larr;</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="calTodayBtn">Today</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="calNextBtn">&rarr;</button>
           </div>
         </div>
-        <div id="tasksViewport"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
       </div>
-    </main>
-  </div>
+    </div>
 
-  <!-- Task Creation & Editing Modal -->
+    <!-- VIEW 4: PROJECTS (#projects) -->
+    <div id="view-projects" class="view-container">
+      <div class="tree-card" style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:1.15rem;font-weight:700;">Projects &amp; Contexts</h2>
+          <p style="font-size:0.84rem;color:var(--text-muted);">Organize tasks by domains and track progress meters</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="openNewProjectBtn">+ New Project</button>
+      </div>
+      <div id="projectsGrid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:1rem;"></div>
+    </div>
+
+    <!-- VIEW 5: STATS (#stats) -->
+    <div id="view-stats" class="view-container">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:1rem;margin-bottom:1.25rem;">
+        <div class="tree-card">
+          <span style="font-size:0.8rem;color:var(--text-muted);">Total Completed Tasks</span>
+          <div style="font-size:1.8rem;font-weight:700;margin-top:0.25rem;" id="statTotalCompleted">0</div>
+        </div>
+        <div class="tree-card">
+          <span style="font-size:0.8rem;color:var(--text-muted);">Pomodoros Logged Today</span>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--accent-amber);margin-top:0.25rem;" id="statPomoToday">0</div>
+        </div>
+        <div class="tree-card">
+          <span style="font-size:0.8rem;color:var(--text-muted);">AI Proof Audit Pass Rate</span>
+          <div style="font-size:1.8rem;font-weight:700;color:var(--accent-green);margin-top:0.25rem;" id="statAuditPassRate">100%</div>
+        </div>
+      </div>
+      <div class="tree-card">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.75rem;">Priority Distribution</h3>
+        <div id="statsPriorityBreakdown" style="display:flex;flex-direction:column;gap:0.4rem;"></div>
+      </div>
+    </div>
+
+    <!-- VIEW 6: TRASH (#trash) -->
+    <div id="view-trash" class="view-container">
+      <div class="tree-card" style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:1.15rem;font-weight:700;">Trash Recovery</h2>
+          <p style="font-size:0.84rem;color:var(--text-muted);">Soft-deleted tasks can be restored or purged permanently</p>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm" id="emptyTrashBtn">Empty Trash</button>
+      </div>
+      <div id="trashTasksList"></div>
+    </div>
+
+    <!-- Batch Multi-Selection Action Bar -->
+    <div class="batch-bar" id="batchBar">
+      <div>
+        <strong id="batchCountLabel">0 tasks selected</strong>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="batchCompleteBtn">Complete</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="batchP1Btn">Set P1</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="batchP2Btn">Set P2</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="batchDeleteBtn">Trash</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="batchCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- 1. Task Creation & Editing Modal -->
   <div class="modal-backdrop" id="taskModal">
     <div class="modal-sheet">
-      <div class="card-header">
-        <h2 class="card-title" id="taskModalTitle">New Task</h2>
-        <button type="button" class="btn btn-sm btn-secondary" id="closeTaskModalBtn">Close</button>
+      <div class="modal-header">
+        <h3 id="taskModalTitle" style="font-size:1.1rem;font-weight:700;">New Task</h3>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeTaskModalBtn">&times;</button>
       </div>
       <form id="taskForm">
         <input type="hidden" id="taskIdInput">
+        <input type="hidden" id="taskParentIdInput">
         <div class="form-group">
-          <label for="taskTitleInput">Title</label>
-          <input type="text" id="taskTitleInput" placeholder="e.g., Complete Calculus Unit 3 Problem Set" required>
+          <label for="taskTitleInput">Task Title</label>
+          <input type="text" id="taskTitleInput" placeholder="What needs to be accomplished?" required>
         </div>
         <div class="form-group">
-          <label for="taskDescInput">Description</label>
-          <textarea id="taskDescInput" rows="2" placeholder="Specific scope and notes..."></textarea>
+          <label for="taskDescInput">Notes / Description</label>
+          <textarea id="taskDescInput" rows="2" placeholder="Sub-milestones, links, criteria details..."></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="taskPrioritySelect">Priority</label>
+            <label for="taskPrioritySelect">Eisenhower Priority</label>
             <select id="taskPrioritySelect">
               <option value="1">P1 — Urgent &amp; Important</option>
-              <option value="2">P2 — Important, Not Urgent</option>
+              <option value="2" selected>P2 — Important, Not Urgent</option>
               <option value="3">P3 — Urgent, Not Important</option>
               <option value="4">P4 — Backlog</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="taskDurationInput">Estimated Minutes</label>
-            <input type="number" id="taskDurationInput" min="5" max="480" value="45">
+            <label for="taskProjectSelect">Project</label>
+            <select id="taskProjectSelect">
+              <option value="inbox">Inbox</option>
+            </select>
           </div>
-        </div>
-        <div class="form-group">
-          <label for="taskDueInput">Due Date &amp; Time</label>
-          <input type="datetime-local" id="taskDueInput">
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>
-              <input type="checkbox" id="taskConsecutiveCheck"> Consecutive Task
-            </label>
+            <label for="taskDueInput">Due Date &amp; Time</label>
+            <input type="datetime-local" id="taskDueInput">
           </div>
           <div class="form-group">
-            <label>
-              <input type="checkbox" id="taskBonusCheck"> Bonus Task (Zero Penalty)
-            </label>
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="taskVideoCheck"> Video Required (NewPipe)
-            </label>
+            <label for="taskPomoEstInput">Estimated Pomodoros (25m)</label>
+            <input type="number" id="taskPomoEstInput" min="1" max="20" value="1">
           </div>
         </div>
-        <div class="form-group">
-          <label for="taskParentSelect">Parent Prerequisite Task (Optional)</label>
-          <select id="taskParentSelect">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskTagsInput">Tags (Comma-separated)</label>
+            <input type="text" id="taskTagsInput" placeholder="study, biology, drill">
+          </div>
+          <div class="form-group">
+            <label for="taskRecurrenceSelect">Recurrence</label>
+            <select id="taskRecurrenceSelect">
+              <option value="">None (One-time)</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:1rem;">
+          <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+            <input type="checkbox" id="taskConsecutiveCheck"> Consecutive Task (Auto-cascades forward)
+          </label>
+          <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+            <input type="checkbox" id="taskBonusCheck"> Bonus Task (Zero penalty)
+          </label>
+        </div>
+        <div class="form-group" id="parentPrereqGroup" style="display:none;">
+          <label for="taskDependsOnSelect">Prerequisite Parent Task</label>
+          <select id="taskDependsOnSelect">
             <option value="">None</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="taskAuditCriteriaInput">AI Proof Criteria (Optional)</label>
-          <input type="text" id="taskAuditCriteriaInput" placeholder="e.g., Photo of handwritten solution page with boxed final answers">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+            <label for="taskCriteriaInput">AI Proof Verification Criteria</label>
+            <button type="button" class="btn btn-secondary btn-sm" id="openCriteriaTemplatesBtn">&#128214; Templates</button>
+          </div>
+          <input type="text" id="taskCriteriaInput" placeholder="e.g., Photo of at least 1 full page of handwritten notes with today's date">
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:0.65rem;margin-top:1rem;">
-          <button type="button" class="btn btn-danger" id="deleteTaskBtn" style="display:none;margin-right:auto;">Delete</button>
+        <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.25rem;">
           <button type="button" class="btn btn-secondary" id="cancelTaskBtn">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Task</button>
         </div>
@@ -177,30 +750,972 @@
     </div>
   </div>
 
-  <!-- Multimodal Proof Upload Modal -->
-  <div class="modal-backdrop" id="proofAuditModal">
-    <div class="modal-sheet">
-      <div class="card-header">
-        <h2 class="card-title">Submit Completion Proof</h2>
-        <button type="button" class="btn btn-sm btn-secondary" id="closeProofModalBtn">Close</button>
+  <!-- 2. Criteria Templates Modal -->
+  <div class="modal-backdrop" id="criteriaTemplatesModal">
+    <div class="modal-sheet" style="max-width:680px;">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size:1.1rem;font-weight:700;">Verification Criteria Templates</h3>
+          <p style="font-size:0.8rem;color:var(--text-muted);">Pre-tested proof requirements for multimodal vision audits</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeCriteriaTemplatesBtn">&times;</button>
       </div>
-      <p class="card-subtitle" id="proofTaskTitle" style="margin-bottom:0.5rem;"></p>
-      <p class="card-subtitle" id="proofCriteriaDisplay" style="margin-bottom:1rem;color:var(--text-primary);"></p>
+      <div id="criteriaTemplatesContainer" style="display:flex;flex-direction:column;gap:0.6rem;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- 3. Multimodal Proof Upload Modal -->
+  <div class="modal-backdrop" id="proofModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size:1.1rem;font-weight:700;">Submit Proof for Audit</h3>
+          <p style="font-size:0.8rem;color:var(--text-muted);" id="proofTaskTitle">Task</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeProofModalBtn">&times;</button>
+      </div>
+      <div style="margin-bottom:1rem;background:var(--bg-elevated);padding:0.75rem;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+        <strong style="font-size:0.84rem;">Required Criteria:</strong>
+        <p style="font-size:0.84rem;color:var(--text-muted);margin-top:0.25rem;" id="proofCriteriaDisplay"></p>
+      </div>
       <form id="proofAuditForm">
         <input type="hidden" id="proofTaskId">
         <div class="form-group">
-          <label for="proofFileInput">Upload Photo or PDF Proof</label>
+          <label for="proofFileInput">Upload Image or PDF Proof</label>
           <input type="file" id="proofFileInput" accept="image/*,application/pdf" required>
         </div>
-        <div id="proofResultBox" style="display:none;margin-bottom:1rem;" class="card"></div>
-        <div style="display:flex;justify-content:flex-end;gap:0.65rem;">
-          <button type="submit" class="btn btn-primary" id="submitProofBtn">Verify Proof with Ari</button>
+        <div id="proofResultBox" style="display:none;margin-bottom:1rem;padding:0.75rem;border-radius:var(--radius-sm);" class="card"></div>
+        <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+          <button type="button" class="btn btn-secondary" id="cancelProofBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitProofBtn">Verify with Ari</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div class="toast-container" id="toastContainer"></div>
-  <script type="module" src="taskitator.js"></script>
+  <!-- 4. New Project Modal -->
+  <div class="modal-backdrop" id="projectModal">
+    <div class="modal-sheet" style="max-width:440px;">
+      <div class="modal-header">
+        <h3 style="font-size:1.1rem;font-weight:700;">New Project</h3>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeProjectModalBtn">&times;</button>
+      </div>
+      <form id="projectForm">
+        <div class="form-group">
+          <label for="projectNameInput">Project Name</label>
+          <input type="text" id="projectNameInput" placeholder="e.g., Biology Course, Arduino Lab" required>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+          <button type="submit" class="btn btn-primary">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-box" id="toastBox"></div>
+
+  <!-- Embedded Criteria Templates Data -->
+  <script id="criteriaTemplatesData" type="application/json">
+[
+  {
+    "id": "written_notes",
+    "category": "Note-Taking & Synthesis",
+    "label": "Handwritten Summary Notes",
+    "template": "Photo of at least 1 full page of handwritten summary notes covering [Topic/Chapter], with today's date clearly written in ink at the top margin."
+  },
+  {
+    "id": "concept_map",
+    "category": "Note-Taking & Synthesis",
+    "label": "Mind Map / Flowchart Diagram",
+    "template": "Photo of a handwritten mind map or annotated physiological/biological mechanism diagram for [Topic], featuring labeled components, connecting arrows, and today's date."
+  },
+  {
+    "id": "feynman_technique",
+    "category": "Note-Taking & Synthesis",
+    "label": "Feynman Method Explanation Sheet",
+    "template": "Photo of a handwritten 1-page breakdown explaining [Concept/Mechanism] in plain language from memory, with key analogies underlined and today's date at the top."
+  },
+  {
+    "id": "question_bank",
+    "category": "Problem Solving & Drills",
+    "label": "Question Bank / Online Quiz",
+    "template": "Screenshot of completed practice quiz/question bank review screen for [Subject], displaying score percentage, completed question count (minimum [Count]), and timestamp."
+  },
+  {
+    "id": "worked_problems",
+    "category": "Problem Solving & Drills",
+    "label": "Handwritten Worked Problems",
+    "template": "Photo of handwritten step-by-step solutions for at least [Count] questions from [Textbook/Resource], with problem numbers circled and final answers boxed."
+  },
+  {
+    "id": "error_log",
+    "category": "Problem Solving & Drills",
+    "label": "Post-Quiz Mistake Audit",
+    "template": "Photo of a handwritten error-log table detailing at least [Count] missed questions from [Test Name], showing: Question #, Root cause of error, and Key takeaway."
+  },
+  {
+    "id": "timed_exam",
+    "category": "Testing & Mock Runs",
+    "label": "Full Mock Exam / Timed Section",
+    "template": "Photo or screenshot of the final score diagnostic report for [Exam/Section], showing total scaled score, section breakdown, and test completion timestamp."
+  },
+  {
+    "id": "anki_review",
+    "category": "Active Recall & Retention",
+    "label": "Spaced Repetition / Anki Deck",
+    "template": "Screenshot of Anki deck overview screen showing [Deck Name] completed with '0 cards due' for today, showing total review count and system clock."
+  },
+  {
+    "id": "blurting_recall",
+    "category": "Active Recall & Retention",
+    "label": "Blurting / Free-Recall Sheet",
+    "template": "Photo of a handwritten free-recall blurt page for [Topic], written in blue/black ink with corrections/missed facts added in a contrasting red/green pen."
+  },
+  {
+    "id": "textbook_active_reading",
+    "category": "Textbook & Literature",
+    "label": "Active Reading & Margin Annotations",
+    "template": "Photo of physical textbook or PDF reader showing pages [X to Y] of [Book Title] with highlighted passages, handwritten margin notes, and physical sticky note summary."
+  },
+  {
+    "id": "formula_derivation",
+    "category": "STEM & Calculations",
+    "label": "Formula Derivation / Pathway Ledger",
+    "template": "Photo of a handwritten full-page derivation of [Formula/Equation] or biochemical cycle pathway, showing all transitional algebraic/reaction steps without skipping."
+  }
+]
+
+  </script>
+
+  <!-- Complete Taskitator JS Engine -->
+  <script>
+    (function () {
+      // LocalStorage Key Constants
+      const STORAGE_KEY = 'mazenos_tasks';
+      const PROJECTS_KEY = 'mazenos_projects';
+      const FOCUS_SESSIONS_KEY = 'mazenos_focus_sessions';
+      const AUDIT_RECEIPTS_KEY = 'mazenos_audit_receipts';
+
+      let tasks = [];
+      let projects = ['inbox', 'study', 'build', 'general'];
+      let currentView = 'today';
+      let collapsedNodeIds = new Set();
+      let selectedTaskIds = new Set();
+      let isSelectionMode = false;
+      let criteriaTemplates = [];
+
+      // Pomodoro Engine State
+      let pomoTimeRemaining = 25 * 60;
+      let pomoRunning = false;
+      let pomoInterval = null;
+      let pomoSessionsCompleted = 0;
+      let activePomoTaskId = null;
+
+      // Calendar State
+      let currentCalDate = new Date();
+
+      function getAuthHeaders() {
+        let token = '';
+        try { token = localStorage.getItem('mazenos_auth_token') || ''; } catch {}
+        return {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        };
+      }
+
+      function showToast(msg) {
+        const box = document.getElementById('toastBox');
+        box.textContent = msg;
+        box.style.display = 'block';
+        setTimeout(() => { box.style.display = 'none'; }, 3000);
+      }
+
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          tasks = raw ? JSON.parse(raw) : [];
+        } catch { tasks = []; }
+
+        try {
+          const pRaw = localStorage.getItem(PROJECTS_KEY);
+          if (pRaw) projects = JSON.parse(pRaw);
+        } catch {}
+
+        try {
+          const templText = document.getElementById('criteriaTemplatesData')?.textContent || '[]';
+          criteriaTemplates = JSON.parse(templText);
+        } catch { criteriaTemplates = []; }
+      }
+
+      function saveData() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); } catch {}
+        try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); } catch {}
+      }
+
+      async function syncWithServer() {
+        try {
+          const res = await fetch('/api/tasks', { headers: getAuthHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+              tasks = data.tasks;
+              saveData();
+            }
+          }
+        } catch {}
+        renderCurrentView();
+      }
+
+      function todayStr() {
+        return new Date().toISOString().slice(0, 10);
+      }
+
+      // Consecutive Cascading Engine
+      function cascadeConsecutiveTasks(parentTaskId, shiftMinutes) {
+        if (!shiftMinutes) return 0;
+        let count = 0;
+        const queue = [parentTaskId];
+        const visited = new Set([parentTaskId]);
+        while (queue.length > 0) {
+          const curId = queue.shift();
+          for (const t of tasks) {
+            if ((t.depends_on_task_id === curId || t.parent_id === curId) && !visited.has(t.id) && t.status !== 'completed') {
+              visited.add(t.id);
+              if (t.is_consecutive && t.due_timestamp) {
+                const ms = Date.parse(t.due_timestamp);
+                if (!Number.isNaN(ms)) {
+                  t.due_timestamp = new Date(ms + shiftMinutes * 60000).toISOString().slice(0, 16);
+                  count++;
+                }
+              }
+              queue.push(t.id);
+            }
+          }
+        }
+        return count;
+      }
+
+      // Pomodoro Timer Logic
+      function updatePomoDisplay() {
+        const mins = String(Math.floor(pomoTimeRemaining / 60)).padStart(2, '0');
+        const secs = String(pomoTimeRemaining % 60).padStart(2, '0');
+        document.getElementById('pomoDisplay').textContent = `${mins}:${secs}`;
+      }
+
+      function startPomodoro() {
+        if (pomoRunning) return;
+        pomoRunning = true;
+        document.getElementById('pomoToggleBtn').innerHTML = '&#10074;&#10074;';
+        pomoInterval = setInterval(async () => {
+          pomoTimeRemaining--;
+          updatePomoDisplay();
+          if (pomoTimeRemaining <= 0) {
+            clearInterval(pomoInterval);
+            pomoRunning = false;
+            document.getElementById('pomoToggleBtn').innerHTML = '&#9654;';
+            pomoSessionsCompleted++;
+            document.getElementById('pomoSessionCount').textContent = `🍅 ${pomoSessionsCompleted}`;
+
+            // Increment Pomodoro count on active task if linked
+            if (activePomoTaskId) {
+              const target = tasks.find(t => t.id === activePomoTaskId);
+              if (target) {
+                target.pomodoro_count = (target.pomodoro_count || 0) + 1;
+                saveData();
+                renderCurrentView();
+              }
+            }
+
+            // Log focus session to MazenOS
+            const sessionPayload = {
+              task_id: activePomoTaskId || null,
+              duration_minutes: Number(document.getElementById('pomoModeSelect').value) || 25,
+              session_type: 'pomodoro',
+              completed: true
+            };
+            try {
+              await fetch('/api/focus', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(sessionPayload)
+              });
+            } catch {}
+
+            showToast('Pomodoro session completed! Insight logged for Ari.');
+            pomoTimeRemaining = Number(document.getElementById('pomoModeSelect').value) * 60;
+            updatePomoDisplay();
+          }
+        }, 1000);
+      }
+
+      function pausePomodoro() {
+        pomoRunning = false;
+        clearInterval(pomoInterval);
+        document.getElementById('pomoToggleBtn').innerHTML = '&#9654;';
+      }
+
+      function resetPomodoro() {
+        pausePomodoro();
+        pomoTimeRemaining = Number(document.getElementById('pomoModeSelect').value) * 60;
+        updatePomoDisplay();
+      }
+
+      // Tree Node Builder
+      function renderTaskItem(t, isChild = false) {
+        const item = document.createElement('div');
+        item.className = `task-node ${t.status === 'completed' ? 'completed' : ''}`;
+        item.dataset.id = t.id;
+
+        const children = tasks.filter(c => c.parent_id === t.id && c.status !== 'trash');
+        const hasChildren = children.length > 0;
+        const isCollapsed = collapsedNodeIds.has(t.id);
+
+        const badges = [];
+        badges.push(`<span class="badge badge-p${t.priority}">P${t.priority}</span>`);
+        if (t.project_id && t.project_id !== 'inbox') {
+          badges.push(`<span class="badge badge-project">&#128193; ${t.project_id}</span>`);
+        }
+        if (t.is_consecutive) badges.push(`<span class="badge badge-p3">Consecutive</span>`);
+        if (t.is_bonus) badges.push(`<span class="badge badge-p2">Bonus</span>`);
+        if (t.ai_audit_criteria) badges.push(`<span class="badge badge-proof">&#128065; Proof Required</span>`);
+        if (t.pomodoro_estimated) {
+          badges.push(`<span class="badge badge-p4">&#127813; ${t.pomodoro_count || 0}/${t.pomodoro_estimated}</span>`);
+        }
+        if (t.tags) {
+          let tagList = Array.isArray(t.tags) ? t.tags : String(t.tags).split(',').map(s=>s.trim()).filter(Boolean);
+          tagList.forEach(tg => badges.push(`<span class="badge badge-tag">#${tg}</span>`));
+        }
+
+        item.innerHTML = `
+          <div class="task-row">
+            ${isSelectionMode ? `<input type="checkbox" class="task-select-chk" data-id="${t.id}" ${selectedTaskIds.has(t.id) ? 'checked' : ''}>` : ''}
+            ${hasChildren
+              ? `<button type="button" class="tree-toggle" data-toggle="${t.id}">${isCollapsed ? '&#9654;' : '&#9660;'}</button>`
+              : `<span style="width:18px;"></span>`}
+            <input type="checkbox" class="task-complete-chk" data-id="${t.id}" ${t.status === 'completed' ? 'checked' : ''}>
+            <div class="task-title-area">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+                <strong style="font-size:0.92rem;${t.status === 'completed' ? 'text-decoration:line-through;color:var(--text-muted);' : ''}">${t.title}</strong>
+                <div style="display:flex;gap:0.35rem;align-items:center;">
+                  <button type="button" class="btn btn-secondary btn-sm pomo-link-btn" data-id="${t.id}" title="Focus on this task">&#127813;</button>
+                  <button type="button" class="btn btn-secondary btn-sm edit-task-btn" data-id="${t.id}">Edit</button>
+                  <button type="button" class="btn btn-secondary btn-sm add-subtask-btn" data-id="${t.id}">+ Sub</button>
+                  ${t.ai_audit_criteria && t.status !== 'completed' ? `<button type="button" class="btn btn-primary btn-sm proof-btn" data-id="${t.id}">Audit</button>` : ''}
+                  <button type="button" class="btn btn-danger btn-sm trash-task-btn" data-id="${t.id}">&times;</button>
+                </div>
+              </div>
+              <div class="task-meta-badges">
+                ${badges.join(' ')}
+                ${t.due_timestamp ? `<span style="font-size:0.75rem;color:var(--text-muted);">&#128337; ${t.due_timestamp.replace('T', ' ')}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          ${hasChildren && !isCollapsed ? `<div class="node-children" id="children-${t.id}"></div>` : ''}
+        `;
+
+        // Event wiring
+        item.querySelector('.task-complete-chk')?.addEventListener('change', (e) => {
+          t.status = e.target.checked ? 'completed' : 'pending';
+          t.completed_at = e.target.checked ? new Date().toISOString() : null;
+          saveData();
+          renderCurrentView();
+          showToast(e.target.checked ? 'Task marked complete.' : 'Task reopened.');
+        });
+
+        item.querySelector('.tree-toggle')?.addEventListener('click', () => {
+          if (collapsedNodeIds.has(t.id)) collapsedNodeIds.delete(t.id);
+          else collapsedNodeIds.add(t.id);
+          renderCurrentView();
+        });
+
+        item.querySelector('.edit-task-btn')?.addEventListener('click', () => openTaskModal(t));
+        item.querySelector('.add-subtask-btn')?.addEventListener('click', () => openTaskModal(null, t.id));
+        item.querySelector('.proof-btn')?.addEventListener('click', () => openProofModal(t));
+        item.querySelector('.trash-task-btn')?.addEventListener('click', () => {
+          t.status = 'trash';
+          saveData();
+          renderCurrentView();
+          showToast('Task moved to Trash.');
+        });
+
+        item.querySelector('.pomo-link-btn')?.addEventListener('click', () => {
+          activePomoTaskId = t.id;
+          showToast(`Pomodoro timer linked to "${t.title}".`);
+        });
+
+        item.querySelector('.task-select-chk')?.addEventListener('change', (e) => {
+          if (e.target.checked) selectedTaskIds.add(t.id);
+          else selectedTaskIds.delete(t.id);
+          updateBatchBar();
+        });
+
+        if (hasChildren && !isCollapsed) {
+          const childContainer = item.querySelector(`#children-${t.id}`);
+          children.forEach(c => childContainer.appendChild(renderTaskItem(c, true)));
+        }
+
+        return item;
+      }
+
+      function updateBatchBar() {
+        const bar = document.getElementById('batchBar');
+        const count = selectedTaskIds.size;
+        document.getElementById('batchCountLabel').textContent = `${count} task(s) selected`;
+        if (isSelectionMode && count > 0) bar.classList.add('active');
+        else bar.classList.remove('active');
+      }
+
+      function renderCurrentView() {
+        const search = (document.getElementById('taskSearchInput')?.value || '').toLowerCase().trim();
+        const todayKeyStr = todayStr();
+
+        // 1. Today View
+        const todayTree = document.getElementById('todayTaskTree');
+        if (todayTree) {
+          todayTree.innerHTML = '';
+          const activeRoots = tasks.filter(t =>
+            !t.parent_id &&
+            t.status !== 'trash' &&
+            (t.priority === 1 || t.is_bonus || !t.due_timestamp || t.due_timestamp.startsWith(todayKeyStr)) &&
+            (!search || t.title.toLowerCase().includes(search))
+          );
+          if (activeRoots.length === 0) {
+            todayTree.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);">No tasks scheduled for Today. Add a task or pull an upcoming bonus!</div>`;
+          } else {
+            activeRoots.forEach(t => todayTree.appendChild(renderTaskItem(t)));
+          }
+          const pendingToday = tasks.filter(t => t.status !== 'completed' && t.status !== 'trash');
+          document.getElementById('todaySummaryStats').textContent = `${pendingToday.length} active tasks in ecosystem &bull; Ari pacing active`;
+        }
+
+        // 2. General View
+        const generalTree = document.getElementById('generalTaskTree');
+        if (generalTree) {
+          generalTree.innerHTML = '';
+          const roots = tasks.filter(t => !t.parent_id && t.status !== 'trash' && (!search || t.title.toLowerCase().includes(search)));
+          if (roots.length === 0) {
+            generalTree.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);">No general tasks found.</div>`;
+          } else {
+            roots.forEach(t => generalTree.appendChild(renderTaskItem(t)));
+          }
+        }
+
+        // 3. Projects View
+        const projGrid = document.getElementById('projectsGrid');
+        if (projGrid) {
+          projGrid.innerHTML = '';
+          projects.forEach(p => {
+            const pTasks = tasks.filter(t => t.project_id === p && t.status !== 'trash');
+            const done = pTasks.filter(t => t.status === 'completed').length;
+            const pct = pTasks.length > 0 ? Math.round((done / pTasks.length) * 100) : 0;
+            const card = document.createElement('div');
+            card.className = 'tree-card';
+            card.innerHTML = `
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <strong style="text-transform:capitalize;font-size:1rem;">${p}</strong>
+                <span class="badge badge-project">${pTasks.length} tasks</span>
+              </div>
+              <div style="height:6px;background:var(--bg-elevated);border-radius:999px;overflow:hidden;margin-bottom:0.5rem;">
+                <div style="height:100%;width:${pct}%;background:var(--accent-blue);"></div>
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">${pct}% completed (${done}/${pTasks.length})</div>
+            `;
+            projGrid.appendChild(card);
+          });
+        }
+
+        // 4. Stats View
+        const completed = tasks.filter(t => t.status === 'completed');
+        document.getElementById('statTotalCompleted').textContent = completed.length;
+        document.getElementById('statPomoToday').textContent = pomoSessionsCompleted;
+        const auditPassEl = document.getElementById('statAuditPassRate');
+        if (auditPassEl) auditPassEl.textContent = '100%';
+
+        const pBreakdown = document.getElementById('statsPriorityBreakdown');
+        if (pBreakdown) {
+          pBreakdown.innerHTML = '';
+          for (let p = 1; p <= 4; p++) {
+            const count = tasks.filter(t => Number(t.priority) === p && t.status !== 'trash').length;
+            pBreakdown.innerHTML += `
+              <div style="display:flex;justify-content:space-between;padding:0.4rem 0.6rem;background:var(--bg-elevated);border-radius:4px;">
+                <span>Priority ${p}</span>
+                <span class="badge badge-p${p}">${count}</span>
+              </div>
+            `;
+          }
+        }
+
+        // 5. Trash View
+        const trashList = document.getElementById('trashTasksList');
+        if (trashList) {
+          trashList.innerHTML = '';
+          const trashed = tasks.filter(t => t.status === 'trash');
+          if (trashed.length === 0) {
+            trashList.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);">Trash is empty.</div>`;
+          } else {
+            trashed.forEach(t => {
+              const row = document.createElement('div');
+              row.className = 'task-row';
+              row.style.background = 'var(--bg-elevated)';
+              row.style.marginBottom = '0.4rem';
+              row.style.borderRadius = 'var(--radius-sm)';
+              row.innerHTML = `
+                <strong style="flex:1;">${t.title}</strong>
+                <button type="button" class="btn btn-secondary btn-sm restore-btn">Restore</button>
+                <button type="button" class="btn btn-danger btn-sm purge-btn">Purge</button>
+              `;
+              row.querySelector('.restore-btn')?.addEventListener('click', () => {
+                t.status = 'pending';
+                saveData();
+                renderCurrentView();
+                showToast('Task restored.');
+              });
+              row.querySelector('.purge-btn')?.addEventListener('click', () => {
+                tasks = tasks.filter(x => x.id !== t.id);
+                saveData();
+                renderCurrentView();
+                showToast('Task permanently purged.');
+              });
+              trashList.appendChild(row);
+            });
+          }
+        }
+
+        // 6. Calendar View
+        renderCalendar();
+      }
+
+      function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const y = currentCalDate.getFullYear();
+        const m = currentCalDate.getMonth();
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('calendarMonthTitle').textContent = `${monthNames[m]} ${y}`;
+
+        ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+          grid.innerHTML += `<div class="calendar-day-head">${d}</div>`;
+        });
+
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const todayStrVal = todayStr();
+
+        for (let i = 0; i < firstDay; i++) {
+          grid.innerHTML += `<div class="calendar-cell" style="opacity:0.25;"></div>`;
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const isToday = dateStr === todayStrVal;
+          const dayTasks = tasks.filter(t => t.due_timestamp && t.due_timestamp.startsWith(dateStr) && t.status !== 'trash');
+
+          const cell = document.createElement('div');
+          cell.className = `calendar-cell ${isToday ? 'today' : ''}`;
+          cell.innerHTML = `
+            <strong style="font-size:0.8rem;">${d}</strong>
+            ${dayTasks.map(t => `<span class="badge badge-p${t.priority}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.title}</span>`).join('')}
+          `;
+          cell.addEventListener('click', () => {
+            document.getElementById('taskSearchInput').value = dateStr;
+            switchView('general');
+            renderCurrentView();
+          });
+          grid.appendChild(cell);
+        }
+      }
+
+      function switchView(viewName) {
+        currentView = viewName;
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.drawer-link').forEach(l => l.classList.remove('active'));
+        const target = document.getElementById(`view-${viewName}`);
+        if (target) target.classList.add('active');
+        const link = document.querySelector(`.drawer-link[data-view="${viewName}"]`);
+        if (link) link.classList.add('active');
+        closeDrawer();
+        renderCurrentView();
+      }
+
+      function openDrawer() {
+        document.getElementById('drawerBackdrop').classList.add('open');
+        document.getElementById('drawerPanel').classList.add('open');
+      }
+      function closeDrawer() {
+        document.getElementById('drawerBackdrop').classList.remove('open');
+        document.getElementById('drawerPanel').classList.remove('open');
+      }
+
+      function openTaskModal(task = null, parentId = null) {
+        document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'New Task';
+        document.getElementById('taskIdInput').value = task ? task.id : '';
+        document.getElementById('taskParentIdInput').value = task ? (task.parent_id || '') : (parentId || '');
+        document.getElementById('taskTitleInput').value = task ? task.title : '';
+        document.getElementById('taskDescInput').value = task ? (task.description || '') : '';
+        document.getElementById('taskPrioritySelect').value = task ? String(task.priority) : '2';
+        document.getElementById('taskDueInput').value = task && task.due_timestamp ? task.due_timestamp.slice(0, 16) : '';
+        document.getElementById('taskPomoEstInput').value = task ? (task.pomodoro_estimated || 1) : 1;
+        document.getElementById('taskTagsInput').value = task ? (Array.isArray(t?.tags) ? t.tags.join(', ') : (t?.tags || '')) : '';
+        document.getElementById('taskConsecutiveCheck').checked = Boolean(task && task.is_consecutive);
+        document.getElementById('taskBonusCheck').checked = Boolean(task && task.is_bonus);
+        document.getElementById('taskCriteriaInput').value = task ? (task.ai_audit_criteria || '') : '';
+
+        // Populate projects select
+        const pSel = document.getElementById('taskProjectSelect');
+        pSel.innerHTML = projects.map(p => `<option value="${p}">${p}</option>`).join('');
+        if (task && task.project_id) pSel.value = task.project_id;
+
+        document.getElementById('taskModal').classList.add('open');
+      }
+
+      function openProofModal(task) {
+        document.getElementById('proofTaskId').value = task.id;
+        document.getElementById('proofTaskTitle').textContent = `Task: ${task.title}`;
+        document.getElementById('proofCriteriaDisplay').textContent = task.ai_audit_criteria || 'Clear visual proof of completion.';
+        document.getElementById('proofResultBox').style.display = 'none';
+        document.getElementById('proofFileInput').value = '';
+        document.getElementById('proofModal').classList.add('open');
+      }
+
+      // Criteria Templates Modal
+      function openCriteriaTemplatesModal() {
+        const cont = document.getElementById('criteriaTemplatesContainer');
+        cont.innerHTML = '';
+        criteriaTemplates.forEach(tpl => {
+          const item = document.createElement('div');
+          item.style.background = 'var(--bg-elevated)';
+          item.style.border = '1px solid var(--border-subtle)';
+          item.style.borderRadius = 'var(--radius-sm)';
+          item.style.padding = '0.75rem';
+          item.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+              <strong style="color:var(--accent-blue);font-size:0.86rem;">${tpl.label}</strong>
+              <span class="badge badge-p4">${tpl.category}</span>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;">${tpl.template}</p>
+            <button type="button" class="btn btn-secondary btn-sm use-template-btn">Use This Template</button>
+          `;
+          item.querySelector('.use-template-btn')?.addEventListener('click', () => {
+            document.getElementById('taskCriteriaInput').value = tpl.template;
+            document.getElementById('criteriaTemplatesModal').classList.remove('open');
+            showToast(`Template "${tpl.label}" applied.`);
+          });
+          cont.appendChild(item);
+        });
+        document.getElementById('criteriaTemplatesModal').classList.add('open');
+      }
+
+      // Ari Copilot Chat In-Drawer
+      async function sendCopilotMessage(userText) {
+        const stream = document.getElementById('copilotStream');
+        const userDiv = document.createElement('div');
+        userDiv.className = 'copilot-msg copilot-user';
+        userDiv.textContent = userText;
+        stream.appendChild(userDiv);
+        stream.scrollTop = stream.scrollHeight;
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              agent: 'ari',
+              message_text: userText,
+              session_id: 'taskitator_copilot'
+            })
+          });
+          const data = await res.json();
+          const ariDiv = document.createElement('div');
+          ariDiv.className = 'copilot-msg copilot-ari';
+          ariDiv.textContent = data.reply || 'Ari: Execution on track.';
+          stream.appendChild(ariDiv);
+        } catch {
+          const p1 = tasks.find(t => Number(t.priority) === 1 && t.status !== 'completed');
+          const fallback = p1
+            ? `Ari: Focus on Priority 1 "${p1.title}". You have logged ${pomoSessionsCompleted} Pomodoros today.`
+            : `Ari: Queue is clear. Schedule your next focus block or execute an active unit.`;
+          const ariDiv = document.createElement('div');
+          ariDiv.className = 'copilot-msg copilot-ari';
+          ariDiv.textContent = fallback;
+          stream.appendChild(ariDiv);
+        }
+        stream.scrollTop = stream.scrollHeight;
+      }
+
+      // Event Listeners Initialization
+      document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        syncWithServer();
+        updatePomoDisplay();
+
+        // Drawer
+        document.getElementById('toggleDrawerBtn')?.addEventListener('click', openDrawer);
+        document.getElementById('closeDrawerBtn')?.addEventListener('click', closeDrawer);
+        document.getElementById('drawerBackdrop')?.addEventListener('click', closeDrawer);
+        document.querySelectorAll('.drawer-link[data-view]').forEach(link => {
+          link.addEventListener('click', () => switchView(link.dataset.view));
+        });
+
+        // Top Controls
+        document.getElementById('openNewTaskBtn')?.addEventListener('click', () => openTaskModal(null));
+        document.getElementById('brandTitleBtn')?.addEventListener('click', () => switchView('today'));
+
+        document.getElementById('taskSearchInput')?.addEventListener('input', () => renderCurrentView());
+
+        document.getElementById('toggleSelectionModeBtn')?.addEventListener('click', () => {
+          isSelectionMode = !isSelectionMode;
+          document.getElementById('toggleSelectionModeBtn').classList.toggle('btn-primary', isSelectionMode);
+          if (!isSelectionMode) selectedTaskIds.clear();
+          updateBatchBar();
+          renderCurrentView();
+        });
+
+        // Batch Action Bar
+        document.getElementById('batchCancelBtn')?.addEventListener('click', () => {
+          selectedTaskIds.clear();
+          updateBatchBar();
+          renderCurrentView();
+        });
+
+        document.getElementById('batchCompleteBtn')?.addEventListener('click', () => {
+          selectedTaskIds.forEach(id => {
+            const t = tasks.find(x => x.id === id);
+            if (t) { t.status = 'completed'; t.completed_at = new Date().toISOString(); }
+          });
+          selectedTaskIds.clear();
+          saveData();
+          updateBatchBar();
+          renderCurrentView();
+          showToast('Selected tasks marked completed.');
+        });
+
+        document.getElementById('batchP1Btn')?.addEventListener('click', () => {
+          selectedTaskIds.forEach(id => {
+            const t = tasks.find(x => x.id === id);
+            if (t) t.priority = 1;
+          });
+          selectedTaskIds.clear();
+          saveData();
+          updateBatchBar();
+          renderCurrentView();
+          showToast('Selected tasks elevated to P1.');
+        });
+
+        document.getElementById('batchP2Btn')?.addEventListener('click', () => {
+          selectedTaskIds.forEach(id => {
+            const t = tasks.find(x => x.id === id);
+            if (t) t.priority = 2;
+          });
+          selectedTaskIds.clear();
+          saveData();
+          updateBatchBar();
+          renderCurrentView();
+          showToast('Selected tasks set to P2.');
+        });
+
+        document.getElementById('batchDeleteBtn')?.addEventListener('click', () => {
+          selectedTaskIds.forEach(id => {
+            const t = tasks.find(x => x.id === id);
+            if (t) t.status = 'trash';
+          });
+          selectedTaskIds.clear();
+          saveData();
+          updateBatchBar();
+          renderCurrentView();
+          showToast('Selected tasks moved to Trash.');
+        });
+
+        // Pomodoro
+        document.getElementById('pomoToggleBtn')?.addEventListener('click', () => {
+          if (pomoRunning) pausePomodoro();
+          else startPomodoro();
+        });
+        document.getElementById('pomoResetBtn')?.addEventListener('click', resetPomodoro);
+        document.getElementById('pomoModeSelect')?.addEventListener('change', (e) => {
+          pausePomodoro();
+          pomoTimeRemaining = Number(e.target.value) * 60;
+          updatePomoDisplay();
+        });
+
+        // Tree Expand/Collapse
+        document.getElementById('collapseAllBtn')?.addEventListener('click', () => {
+          tasks.forEach(t => collapsedNodeIds.add(t.id));
+          renderCurrentView();
+        });
+        document.getElementById('expandAllBtn')?.addEventListener('click', () => {
+          collapsedNodeIds.clear();
+          renderCurrentView();
+        });
+
+        // Modals
+        document.getElementById('closeTaskModalBtn')?.addEventListener('click', () => document.getElementById('taskModal').classList.remove('open'));
+        document.getElementById('cancelTaskBtn')?.addEventListener('click', () => document.getElementById('taskModal').classList.remove('open'));
+        document.getElementById('closeProofModalBtn')?.addEventListener('click', () => document.getElementById('proofModal').classList.remove('open'));
+        document.getElementById('cancelProofBtn')?.addEventListener('click', () => document.getElementById('proofModal').classList.remove('open'));
+        document.getElementById('closeCriteriaTemplatesBtn')?.addEventListener('click', () => document.getElementById('criteriaTemplatesModal').classList.remove('open'));
+        document.getElementById('openCriteriaTemplatesBtn')?.addEventListener('click', openCriteriaTemplatesModal);
+
+        document.getElementById('openNewProjectBtn')?.addEventListener('click', () => document.getElementById('projectModal').classList.add('open'));
+        document.getElementById('closeProjectModalBtn')?.addEventListener('click', () => document.getElementById('projectModal').classList.remove('open'));
+
+        document.getElementById('projectForm')?.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const name = document.getElementById('projectNameInput').value.trim().toLowerCase();
+          if (name && !projects.includes(name)) {
+            projects.push(name);
+            saveData();
+            showToast(`Project "${name}" created.`);
+          }
+          document.getElementById('projectModal').classList.remove('open');
+          document.getElementById('projectForm').reset();
+          renderCurrentView();
+        });
+
+        document.getElementById('emptyTrashBtn')?.addEventListener('click', () => {
+          tasks = tasks.filter(t => t.status !== 'trash');
+          saveData();
+          renderCurrentView();
+          showToast('Trash emptied permanently.');
+        });
+
+        // Calendar Controls
+        document.getElementById('calPrevBtn')?.addEventListener('click', () => {
+          currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+          renderCalendar();
+        });
+        document.getElementById('calNextBtn')?.addEventListener('click', () => {
+          currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+          renderCalendar();
+        });
+        document.getElementById('calTodayBtn')?.addEventListener('click', () => {
+          currentCalDate = new Date();
+          renderCalendar();
+        });
+
+        // Task Form Submit
+        document.getElementById('taskForm')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const id = document.getElementById('taskIdInput').value;
+          const parentId = document.getElementById('taskParentIdInput').value || null;
+          const rawTags = document.getElementById('taskTagsInput').value;
+          const tagArr = rawTags.split(',').map(s => s.trim()).filter(Boolean);
+
+          const payload = {
+            title: document.getElementById('taskTitleInput').value.trim(),
+            description: document.getElementById('taskDescInput').value.trim(),
+            priority: Number(document.getElementById('taskPrioritySelect').value) || 2,
+            project_id: document.getElementById('taskProjectSelect').value || 'inbox',
+            due_timestamp: document.getElementById('taskDueInput').value || null,
+            pomodoro_estimated: Number(document.getElementById('taskPomoEstInput').value) || 1,
+            tags: tagArr,
+            is_consecutive: document.getElementById('taskConsecutiveCheck').checked,
+            is_bonus: document.getElementById('taskBonusCheck').checked,
+            ai_audit_criteria: document.getElementById('taskCriteriaInput').value.trim() || null,
+            parent_id: parentId
+          };
+
+          if (id) {
+            const idx = tasks.findIndex(t => t.id === id);
+            if (idx !== -1) {
+              const oldDue = tasks[idx].due_timestamp;
+              tasks[idx] = { ...tasks[idx], ...payload };
+              if (oldDue && payload.due_timestamp && payload.due_timestamp > oldDue && payload.is_consecutive) {
+                const diffMins = Math.round((Date.parse(payload.due_timestamp) - Date.parse(oldDue)) / 60000);
+                if (diffMins > 0) cascadeConsecutiveTasks(id, diffMins);
+              }
+            }
+          } else {
+            const newTask = {
+              id: 't_' + Date.now(),
+              status: 'pending',
+              pomodoro_count: 0,
+              created_at: new Date().toISOString(),
+              ...payload
+            };
+            tasks.push(newTask);
+          }
+
+          saveData();
+          document.getElementById('taskModal').classList.remove('open');
+          showToast(id ? 'Task updated.' : 'Task created.');
+          renderCurrentView();
+
+          // Sync with Cloudflare Worker
+          try {
+            await fetch(id ? `/api/tasks/${id}` : '/api/tasks', {
+              method: id ? 'PUT' : 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify(payload)
+            });
+          } catch {}
+        });
+
+        // Multimodal Proof Upload Submit
+        document.getElementById('proofAuditForm')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const taskId = document.getElementById('proofTaskId').value;
+          const fileInput = document.getElementById('proofFileInput');
+          const file = fileInput.files?.[0];
+          const resultBox = document.getElementById('proofResultBox');
+          if (!file) return;
+
+          resultBox.style.display = 'block';
+          resultBox.innerHTML = '<span style="color:var(--text-muted);">Uploading and verifying proof with Ari...</span>';
+
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64Data = String(reader.result).split(',')[1] || '';
+            try {
+              const res = await fetch(`/api/tasks/${taskId}/audit`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                  mime_type: file.type || 'image/png',
+                  base64_data: base64Data
+                })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Audit failed closed.');
+              resultBox.innerHTML = `
+                <div style="font-weight:700;color:var(--accent-green);">Verdict: ${data.verdict.toUpperCase()} (Score: ${data.score}/10)</div>
+                <div style="font-size:0.84rem;color:var(--text-muted);margin-top:0.35rem;">${data.critique}</div>
+              `;
+              if (data.verdict === 'passed') {
+                const t = tasks.find(x => x.id === taskId);
+                if (t) { t.status = 'completed'; t.completed_at = new Date().toISOString(); }
+                saveData();
+                renderCurrentView();
+                showToast('Audit passed! Task marked complete.');
+              }
+            } catch (err) {
+              resultBox.innerHTML = `
+                <div style="font-weight:700;color:var(--accent-red);">Audit Failed Closed (Zero-Simulation):</div>
+                <div style="font-size:0.84rem;color:var(--text-muted);margin-top:0.25rem;">${err.message}</div>
+              `;
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+
+        // Copilot
+        document.getElementById('toggleCopilotBtn')?.addEventListener('click', () => {
+          document.getElementById('copilotPanel').classList.toggle('open');
+        });
+        document.getElementById('closeCopilotBtn')?.addEventListener('click', () => {
+          document.getElementById('copilotPanel').classList.remove('open');
+        });
+        document.getElementById('copilotForm')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const inp = document.getElementById('copilotInput');
+          const txt = inp.value.trim();
+          if (!txt) return;
+          inp.value = '';
+          await sendCopilotMessage(txt);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

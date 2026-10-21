@@ -51,6 +51,30 @@
       </div>
 
       <form id="universalSettingsForm">
+        <!-- Live API Credit Border Status -->
+        <div class="card" style="background:var(--bg-elevated);margin-bottom:1.25rem;border-color:var(--border-subtle);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+            <div>
+              <strong style="font-size:0.95rem;">API Credit Borders &amp; Usage</strong>
+              <p class="card-subtitle" style="margin-top:0.15rem;">Configurable limits stop requests when reached to protect external API credit.</p>
+            </div>
+            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+              <span class="badge badge-p3" id="liveDailyUsageBadge">Today: 0 / 50</span>
+              <span class="badge badge-p2" id="liveMonthlyUsageBadge">Month: 0 / 1000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dailyLimitInput">Daily AI Request Limit (0 for unlimited)</label>
+            <input type="number" id="dailyLimitInput" min="0" max="10000" placeholder="50">
+          </div>
+          <div class="form-group">
+            <label for="monthlyLimitInput">Monthly AI Request Limit (0 for unlimited)</label>
+            <input type="number" id="monthlyLimitInput" min="0" max="100000" placeholder="1000">
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label for="aiProviderSelect">Active AI Provider</label>

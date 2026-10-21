@@ -70,26 +70,11 @@ export async function buildCompactState(env) {
      FROM daily_health_logs WHERE date = ?`
   ).bind(todayStr).first();
 
-  // Latest budget balance
-  const budgetRow = await env.DB.prepare(
-    `SELECT balance_after_sar FROM budget_entries
-     WHERE balance_after_sar IS NOT NULL
-     ORDER BY created_at DESC LIMIT 1`
-  ).first();
-
-  // Rest window setting
-  const restSetting = await env.DB.prepare(
-    `SELECT value FROM system_settings WHERE key = 'rest_window'`
-  ).first();
-
-  // Hardware lock evaluation
-  let locked = false;
-  if (activeP1 && activeP1.due_timestamp && !(healthRow && healthRow.is_sick)) {
-    const dueMs = Date.parse(activeP1.due_timestamp);
-    if (!Number.isNaN(dueMs) && Date.now() > dueMs) {
-      locked = true;
-    }
-  }
+    // Pomodoro sessions today
+  const pomodoroRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS sessions_count, SUM(duration_minutes) AS total_focus_mins
+     FROM focus_sessions WHERE date(started_at) = ? AND completed_at IS NOT NULL`
+  ).bind(todayStr).first();
 
   return {
     time_now: timeNowStr,
@@ -97,8 +82,14 @@ export async function buildCompactState(env) {
       id: activeP1.id,
       title: activeP1.title,
       due: activeP1.due_timestamp ? activeP1.due_timestamp.slice(11, 16) : null,
-      is_consecutive: Boolean(activeP1.is_consecutive)
+      is_consecutive: Boolean(activeP1.is_consecutive),
+      pomodoro_spent: activeP1.pomodoro_count || 0,
+      pomodoro_est: activeP1.pomodoro_estimated || 1
     } : null,
+    pomodoro_metrics: {
+      sessions_today: pomodoroRow ? (pomodoroRow.sessions_count || 0) : 0,
+      focus_minutes_today: pomodoroRow ? (pomodoroRow.total_focus_mins || 0) : 0
+    },
     downstream_chain: downstreamChain,
     health: {
       sleep_hours: healthRow ? healthRow.sleep_hours : null,

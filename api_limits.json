@@ -1,0 +1,12 @@
+{
+  "daily_ai_limit": 50,
+  "monthly_ai_limit": 1000,
+  "description": "User-configurable borders to protect external AI API credits (Gemini & Claude). Set to 0 for unlimited.",
+  "timezone": "Asia/Riyadh",
+  "fail_closed_status": 429,
+  "endpoints_guarded": [
+    "/api/chat",
+    "/api/tasks/:id/audit",
+    "/api/audit/media"
+  ]
+}

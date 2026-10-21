@@ -18,23 +18,32 @@ CREATE INDEX IF NOT EXISTS idx_chat_session ON chat_messages(session_id, created
 
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
+    parent_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    project_id TEXT NOT NULL DEFAULT 'inbox',
     title TEXT NOT NULL,
     description TEXT,
-    priority INTEGER NOT NULL CHECK (priority BETWEEN 1 AND 4),
+    priority INTEGER NOT NULL CHECK (priority BETWEEN 1 AND 4) DEFAULT 2,
     is_consecutive BOOLEAN NOT NULL DEFAULT 0,
     depends_on_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
     due_timestamp DATETIME,
     estimated_duration_minutes INTEGER NOT NULL DEFAULT 45,
-    status TEXT NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'archived')) DEFAULT 'pending',
+    pomodoro_estimated INTEGER NOT NULL DEFAULT 1,
+    pomodoro_count INTEGER NOT NULL DEFAULT 0,
+    tags TEXT NOT NULL DEFAULT '[]',
+    recurrence_rule TEXT DEFAULT NULL,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'archived', 'trash')) DEFAULT 'pending',
     is_bonus BOOLEAN NOT NULL DEFAULT 0,
     original_scheduled_date DATE,
     ai_audit_criteria TEXT,
+    exemplar_data TEXT DEFAULT NULL,
     requires_video BOOLEAN NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME
 );
 CREATE INDEX IF NOT EXISTS idx_tasks_status_priority ON tasks(status, priority);
 CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_timestamp);
+CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 
 CREATE TABLE IF NOT EXISTS subtasks (
     id TEXT PRIMARY KEY,
@@ -135,3 +144,12 @@ CREATE TABLE IF NOT EXISTS focus_sessions (
     started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME
 );
+
+CREATE TABLE IF NOT EXISTS api_usage_logs (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_api_usage_date ON api_usage_logs(created_at);

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MazenOS — Production Deployment & Manual Setup Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #090b10;
+      --bg-card: #11151f;
+      --bg-elevated: #171c29;
+      --bg-hover: #1e2536;
+      --border-subtle: #242c3d;
+      --border-focus: #3b82f6;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Sticky Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(17, 21, 31, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .pill-badge {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .progress-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .progress-track {
+      width: 120px;
+      height: 8px;
+      background: var(--bg-elevated);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-green);
+      transition: width 0.3s ease;
+    }
+
+    /* Split Guide Layout */
+    .guide-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 2rem;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      flex: 1;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .guide-layout { grid-template-columns: 1fr; }
+      nav.toc-sidebar { display: none; }
+    }
+
+    /* Sidebar Table of Contents */
+    nav.toc-sidebar {
+      position: sticky;
+      top: 5rem;
+      height: calc(100vh - 7rem);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding-right: 0.5rem;
+    }
+
+    .toc-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .toc-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    /* Main Content Sections */
+    .guide-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .guide-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.75rem;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 1rem;
+    }
+
+    .section-step {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-blue);
+      margin-bottom: 0.25rem;
+    }
+
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .checklist-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-elevated);
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .checklist-toggle input { cursor: pointer; }
+
+    p.lead-desc {
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      font-size: 0.95rem;
+    }
+
+    ol.step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      padding-left: 1.5rem;
+    }
+
+    ol.step-list li {
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    ol.step-list strong {
+      color: #fff;
+    }
+
+    /* Code Blocks with Copy Button */
+    .code-container {
+      position: relative;
+      margin: 0.75rem 0 1rem 0;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .code-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.35rem 0.75rem;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .copy-btn {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-main);
+      font-size: 0.72rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-hover);
+    }
+
+    pre {
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Table Component */
+    .config-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+
+    .config-table th, .config-table td {
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .config-table th {
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .config-table tr:nth-child(even) {
+      background: rgba(23, 28, 41, 0.4);
+    }
+
+    /* Callout Note Boxes */
+    .callout {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.95rem 1.15rem;
+      border-radius: var(--radius-sm);
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+
+    .callout-info {
+      background: rgba(59, 130, 246, 0.12);
+      border-left: 4px solid var(--accent-blue);
+      color: #bfdbfe;
+    }
+
+    .callout-warning {
+      background: rgba(245, 158, 11, 0.12);
+      border-left: 4px solid var(--accent-amber);
+      color: #fde68a;
+    }
+
+    .callout-success {
+      background: rgba(16, 185, 129, 0.12);
+      border-left: 4px solid var(--accent-green);
+      color: #a7f3d0;
+    }
+
+    /* Toast */
+    .toast-box {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--accent-blue);
+      color: var(--text-main);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-group">
+      <span class="brand-title">MazenOS Setup Guide</span>
+      <span class="pill-badge">Production Architecture</span>
+    </div>
+    <div class="header-actions">
+      <div class="progress-bar-wrap">
+        <span>Setup Checklist:</span>
+        <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+        <span id="progressText">0 / 6</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="guide-layout">
+    <!-- Sidebar Navigation -->
+    <nav class="toc-sidebar" aria-label="Table of Contents">
+      <div class="toc-title">Setup Milestones</div>
+      <a class="toc-link" data-target="sec-github">1. GitHub Repository</a>
+      <a class="toc-link" data-target="sec-cloudflare-keys">2. Cloudflare API Token</a>
+      <a class="toc-link" data-target="sec-d1-kv">3. D1 Database &amp; KV Setup</a>
+      <a class="toc-link" data-target="sec-deploy">4. Automated Deployment</a>
+      <a class="toc-link" data-target="sec-ai-keys">5. AI Keys &amp; Settings</a>
+      <a class="toc-link" data-target="sec-macrodroid">6. Android MacroDroid</a>
+    </nav>
+
+    <!-- Main Guide Content -->
+    <main class="guide-main">
+
+      <!-- SECTION 1: GITHUB SETUP -->
+      <section class="guide-card" id="sec-github">
+        <div class="section-head">
+          <div>
+            <div class="section-step">Step 1 of 6</div>
+            <h2 class="section-title">GitHub Repository Initialization</h2>
+          </div>
+          <label class="checklist-toggle">
+            <input type="checkbox" class="step-check" data-step="1">
+            <span>Mark Complete</span>
+          </label>
+        </div>
+        <p class="lead-desc">
+          MazenOS uses automated GitHub Actions to deploy the Cloudflare Worker, apply database migrations, and deploy the multi-page static Pages frontend.
+        </p>
+        <ol class="step-list">
+          <li>
+            <strong>Create a new GitHub Repository:</strong> Go to <a href="https://github.com/new" target="_blank" rel="noopener" style="color:var(--accent-blue);">github.com/new</a> and create a private repository named <code>mazenos</code>.
+          </li>
+          <li>
+            <strong>Unzip and Push the Source Code:</strong> Extract the provided <code>mazenos.zip</code> archive into a local folder, initialize git, and push to your <code>main</code> branch:
+            <div class="code-container">
+              <div class="code-bar">
+                <span>Terminal</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>git init
+git add .
+git commit -m "feat: initial MazenOS production architecture"
+git branch -M main
+git remote add origin https://github.com/&lt;your-username&gt;/mazenos.git
+git push -u origin main</code></pre>
+            </div>
+          </li>
+          <li>
+            <strong>Confirm Repository Structure:</strong> Ensure that <code>wrangler.toml</code>, <code>schema.sql</code>, <code>worker.js</code>, and all tool HTML pages (<code>index.html</code>, <code>taskitator.html</code>, etc.) reside in the root directory, with <code>.github/workflows/deploy.yml</code> in place.
+          </li>
+        </ol>
+      </section>
+
+      <!-- SECTION 2: CLOUDFLARE API & SECRETS -->
+      <section class="guide-card" id="sec-cloudflare-keys">
+        <div class="section-head">
+          <div>
+            <div class="section-step">Step 2 of 6</div>
+            <h2 class="section-title">Cloudflare Account ID &amp; API Token</h2>
+          </div>
+          <label class="checklist-toggle">
+            <input type="checkbox" class="step-check" data-step="2">
+            <span>Mark Complete</span>
+          </label>
+        </div>
+        <p class="lead-desc">
+          GitHub Actions requires an API token with permissions to manage D1, Workers, and Pages.
+        </p>
+        <ol class="step-list">
+          <li>
+            <strong>Locate your Cloudflare Account ID:</strong>
+            <ul style="margin-top:0.4rem;padding-left:1.25rem;">
+              <li>Log in to the <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener" style="color:var(--accent-blue);">Cloudflare Dashboard</a>.</li>
+              <li>Click on <strong>Workers &amp; Pages</strong> in the left sidebar.</li>
+              <li>Your <strong>Account ID</strong> is displayed on the right sidebar. Copy this 32-character string.</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Generate an API Token:</strong>
+            <ul style="margin-top:0.4rem;padding-left:1.25rem;">
+              <li>Navigate to <strong>My Profile &rarr; API Tokens</strong> (<a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener" style="color:var(--accent-blue);">direct link</a>).</li>
+              <li>Click <strong>Create Token &rarr; Create Custom Token</strong>.</li>
+              <li>Name the token: <code>MazenOS-Deploy-Token</code>.</li>
+              <li>Assign the following specific permissions:</li>
+            </ul>
+            <table class="config-table">
+              <thead>
+                <tr>
+                  <th>Scope</th>
+                  <th>Resource</th>
+                  <th>Permission Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Account</td>
+                  <td>D1</td>
+                  <td><strong>Edit</strong></td>
+                </tr>
+                <tr>
+                  <td>Account</td>
+                  <td>Workers KV Storage</td>
+                  <td><strong>Edit</strong></td>
+                </tr>
+                <tr>
+                  <td>Account</td>
+                  <td>Cloudflare Pages</td>
+                  <td><strong>Edit</strong></td>
+                </tr>
+                <tr>
+                  <td>Account</td>
+                  <td>Workers Scripts</td>
+                  <td><strong>Edit</strong></td>
+                </tr>
+                <tr>
+                  <td>Account</td>
+                  <td>Account Settings</td>
+                  <td><strong>Read</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </li>
+          <li>
+            <strong>Store Secrets in GitHub:</strong>
+            <p style="margin-top:0.35rem;">In your GitHub repository, navigate to <strong>Settings &rarr; Secrets and variables &rarr; Actions &rarr; New repository secret</strong> and add:</p>
+            <table class="config-table">
+              <thead>
+                <tr>
+                  <th>Secret Name</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>CLOUDFLARE_API_TOKEN</code></td>
+                  <td>The custom API Token string generated above</td>
+                </tr>
+                <tr>
+                  <td><code>CLOUDFLARE_ACCOUNT_ID</code></td>
+                  <td>Your 32-character Cloudflare Account ID</td>
+                </tr>
+              </tbody>
+            </table>
+          </li>
+        </ol>
+      </section>
+
+      <!-- SECTION 3: D1 & KV SETUP -->
+      <section class="guide-card" id="sec-d1-kv">
+        <div class="section-head">
+          <div>
+            <div class="section-step">Step 3 of 6</div>
+            <h2 class="section-title">Cloudflare D1 Database &amp; KV Namespace</h2>
+          </div>
+          <label class="checklist-toggle">
+            <input type="checkbox" class="step-check" data-step="3">
+            <span>Mark Complete</span>
+          </label>
+        </div>
+        <p class="lead-desc">
+          MazenOS centralizes all operational data in a single D1 relational SQLite database and uses Cloudflare KV for transient lock flags.
+        </p>
+        <ol class="step-list">
+          <li>
+            <strong>Create the D1 Database:</strong> In your terminal (or Cloudflare Dashboard under <em>Storage &amp; Databases &rarr; D1</em>), run:
+            <div class="code-container">
+              <div class="code-bar">
+                <span>Terminal</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>npx wrangler d1 create mazenos_db</code></pre>
+            </div>
+            <p>Wrangler outputs your database binding snippet with a unique <code>database_id</code> (UUID).</p>
+          </li>
+          <li>
+            <strong>Create the KV Namespace:</strong> Run:
+            <div class="code-container">
+              <div class="code-bar">
+                <span>Terminal</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>npx wrangler kv namespace create "KV"</code></pre>
+            </div>
+            <p>Wrangler outputs your KV binding snippet with a unique <code>id</code>.</p>
+          </li>
+          <li>
+            <strong>Update <code>wrangler.toml</code>:</strong> Paste the generated IDs into your <code>wrangler.toml</code> file:
+            <div class="code-container">
+              <div class="code-bar">
+                <span>wrangler.toml</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>name = "mazenos"
+main = "worker.js"
+compatibility_date = "2025-02-01"
+
+[triggers]
+crons = ["0 0 * * *"] # 03:00 AM Asia/Riyadh (00:00 UTC)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mazenos_db"
+database_id = "PASTE-YOUR-D1-DATABASE-ID-HERE"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "PASTE-YOUR-KV-NAMESPACE-ID-HERE"
+
+[vars]
+TIMEZONE = "Asia/Riyadh"
+DEFAULT_AI_PROVIDER = "gemini"
+DEFAULT_MODEL_TIER = "light"</code></pre>
+            </div>
+          </li>
+          <li>
+            <strong>Execute Schema Migration:</strong> Initialize the 11 empty tables in the remote database:
+            <div class="code-container">
+              <div class="code-bar">
+                <span>Terminal</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>npx wrangler d1 execute mazenos_db --file=./schema.sql --remote</code></pre>
+            </div>
+          </li>
+        </ol>
+        <div class="callout callout-success">
+          <span>&#10004;</span>
+          <div>All database tables start completely empty, ready for authentic inputs without synthetic sample records.</div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: DEPLOYMENT VERIFICATION -->
+      <section class="guide-card" id="sec-deploy">
+        <div class="section-head">
+          <div>
+            <div class="section-step">Step 4 of 6</div>
+            <h2 class="section-title">Deployment &amp; Domain Verification</h2>
+          </div>
+          <label class="checklist-toggle">
+            <input type="checkbox" class="step-check" data-step="4">
+            <span>Mark Complete</span>
+          </label>
+        </div>
+        <p class="lead-desc">
+          Push your updated <code>wrangler.toml</code> to GitHub to trigger automated push-to-deploy, or run deployment commands directly.
+        </p>
+        <ol class="step-list">
+          <li>
+            <strong>Trigger GitHub Action:</strong>
+            <div class="code-container">
+              <div class="code-bar">
+                <span>Terminal</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>git add wrangler.toml
+git commit -m "chore: bind production D1 database and KV namespace"
+git push origin main</code></pre>
+            </div>
+            <p>Visit your GitHub repo's <strong>Actions</strong> tab to verify the workflow runs and completes all steps green.</p>
+          </li>
+          <li>
+            <strong>Verify Cloudflare Worker URL:</strong>
+            <p>Your Worker will be live at: <code>https://mazenos.&lt;your-subdomain&gt;.workers.dev</code>.</p>
+            <p>Test the public hardware endpoint in your browser or curl:</p>
+            <div class="code-container">
+              <div class="code-bar">
+                <span>Terminal</span>
+                <button type="button" class="copy-btn">Copy</button>
+              </div>
+              <pre><code>curl -s https://mazenos.&lt;your-subdomain&gt;.workers.dev/status</code></pre>
+            </div>
+            <p>Expected initial response: <code>{"device_unlocked": true, "reason": "All P1 milestones on track", ...}</code></p>
+          </li>
+          <li>
+            <strong>Verify Cloudflare Pages Frontend:</strong>
+            <p>Your static pages dashboard will be accessible at: <code>https://mazenos.pages.dev</code>.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- SECTION 5: AI KEYS & SETTINGS -->
+      <section class="guide-card" id="sec-ai-keys">
+        <div class="section-head">
+          <div>
+            <div class="section-step">Step 5 of 6</div>
+            <h2 class="section-title">One-Time Universal Setup &amp; AI Keys</h2>
+          </div>
+          <label class="checklist-toggle">
+            <input type="checkbox" class="step-check" data-step="5">
+            <span>Mark Complete</span>
+          </label>
+        </div>
+        <p class="lead-desc">
+          Configure your unified master password, MacroDroid token, and external AI provider keys in MazenOS Universal Settings.
+        </p>
+        <ol class="step-list">
+          <li>
+            <strong>Open Settings:</strong> Open <code>https://mazenos.pages.dev/settings.html</code> (or tap the gear icon in the top header).
+          </li>
+          <li>
+            <strong>Obtain AI Provider API Keys:</strong>
+            <ul style="margin-top:0.35rem;padding-left:1.25rem;">
+              <li><strong>Google Gemini:</strong> Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent-blue);">Google AI Studio</a> and create an API key (used for Light Tier <code>gemini-2.5-flash-lite</code> / <code>gemini-2.0-flash-lite</code>, Smart Tier <code>gemini-2.5-flash</code>, and multimodal vision proof audits).</li>
+              <li><strong>Anthropic Claude:</strong> Visit the <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent-blue);">Anthropic Console</a> and generate an API key (used for <code>claude-3-5-haiku-latest</code> and <code>claude-3-5-sonnet-latest</code>).</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Configure Shared Credentials:</strong> Under <strong>Universal System Settings</strong>:
+            <table class="config-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Active AI Provider</td>
+                  <td>Select <strong>Google Gemini</strong> or <strong>Anthropic Claude</strong></td>
+                </tr>
+                <tr>
+                  <td>Model Tier</td>
+                  <td>Select <strong>Light Tier</strong> for rapid execution or <strong>Smart Tier</strong> for deep reasoning</td>
+                </tr>
+                <tr>
+                  <td>Gemini API Key</td>
+                  <td>Paste your Gemini API key (starts with <code>AIzaSy...</code>)</td>
+                </tr>
+                <tr>
+                  <td>Claude API Key</td>
+                  <td>Paste your Claude API key (starts with <code>sk-ant-...</code>)</td>
+                </tr>
+                <tr>
+                  <td>Daily AI Limit</td>
+                  <td>Daily request border (default: <code>50</code>, enter <code>0</code> for unlimited). Protects API credits from burning.</td>
+                </tr>
+                <tr>
+                  <td>Monthly AI Limit</td>
+                  <td>Monthly request border (default: <code>1000</code>, enter <code>0</code> for unlimited).</td>
+                </tr>
+                <tr>
+                  <td>MacroDroid Token</td>
+                  <td>Enter a custom secret string (e.g., <code>maz_phone_99218</code>) to authenticate phone webhooks</td>
+                </tr>
+                <tr>
+                  <td>Master Password</td>
+                  <td>Enter your master password. All web pages store this token in browser storage to authenticate API calls</td>
+                </tr>
+              </tbody>
+            </table>
+          </li>
+          <li>
+            <strong>Save Settings:</strong> Click <strong>Save Universal Settings</strong>. The credentials persist directly in D1 <code>system_settings</code>.
+          </li>
+        </ol>
+      </section>
+
+      <!-- SECTION 6: ANDROID MACRODROID -->
+      <section class="guide-card" id="sec-macrodroid">
+        <div class="section-head">
+          <div>
+            <div class="section-step">Step 6 of 6</div>
+            <h2 class="section-title">Android MacroDroid Hardware Automation</h2>
+          </div>
+          <label class="checklist-toggle">
+            <input type="checkbox" class="step-check" data-step="6">
+            <span>Mark Complete</span>
+          </label>
+        </div>
+        <p class="lead-desc">
+          MacroDroid enforces physical discipline by polling the hardware lock status, forwarding bank SMS messages, and auditing study video streaming.
+        </p>
+
+        <h3 style="font-size:1.05rem;color:#fff;margin:1rem 0 0.5rem 0;">Macro 1: Periodic Hardware Lock Poller</h3>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:0.75rem;">Polls <code>/status</code> every 10 minutes. If an overdue P1 task exists outside rest windows, raises a persistent lock screen overlay.</p>
+        <ul style="padding-left:1.25rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.88rem;">
+          <li><strong>Trigger:</strong> Regular Interval &rarr; Every 10 Minutes.</li>
+          <li><strong>Action 1:</strong> HTTP Request &rarr; GET <code>https://mazenos.&lt;your-subdomain&gt;.workers.dev/status</code>.</li>
+          <li><strong>Action 2:</strong> JSON Parse &rarr; Extract <code>device_unlocked</code> into string variable <code>[lv=unlocked]</code>.</li>
+          <li><strong>Action 3:</strong> If <code>[lv=unlocked] == "false"</code>:
+            <ul style="padding-left:1rem;margin-top:0.25rem;">
+              <li>Lock Screen (or Display Dialog / Fullscreen Overlay with text: <em>"MazenOS: Overdue Priority 1 Task. Return to desk."</em>).</li>
+            </ul>
+          </li>
+          <li><strong>Action 4:</strong> Else: Dismiss lock overlay.</li>
+        </ul>
+
+        <div class="callout callout-info" style="margin-top:1rem;">
+          <span>&#8505;</span>
+          <div><strong>Automatic Suspensions:</strong> The <code>/status</code> endpoint automatically returns <code>device_unlocked: true</code> during the Riyadh daily rest window (<code>12:30 - 13:15</code>), all day on Fridays (Friday Builder Safeguard), and whenever Sickness Mode is active.</div>
+        </div>
+
+        <h3 style="font-size:1.05rem;color:#fff;margin:1.5rem 0 0.5rem 0;">Macro 2: Bank SMS Auto-Ledger Forwarder</h3>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:0.75rem;">Intercepts bank transaction SMS notifications and posts them to the zero-cost regex parser endpoint.</p>
+        <ul style="padding-left:1.25rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.88rem;">
+          <li><strong>Trigger:</strong> SMS Received &rarr; From: <code>*AlRajhi*</code>, <code>*SNB*</code>, <code>*Riyad*</code>, <code>*STCPay*</code>, or <code>*mada*</code>.</li>
+          <li><strong>Action:</strong> HTTP Request:
+            <ul style="padding-left:1rem;margin-top:0.25rem;">
+              <li>Method: <strong>POST</strong></li>
+              <li>URL: <code>https://mazenos.&lt;your-subdomain&gt;.workers.dev/api/budget/sms</code></li>
+              <li>Header 1: <code>Content-Type: application/json</code></li>
+              <li>Header 2: <code>Authorization: Bearer &lt;YOUR_MACRODROID_TOKEN&gt;</code></li>
+              <li>Body: <code>{"sms_text": "{sms_message}"}</code></li>
+            </ul>
+          </li>
+          <li><strong>Result:</strong> Amount in SAR, card source, merchant name, and balance are extracted at zero token cost and logged in <code>budget_entries</code>.</li>
+        </ul>
+
+        <h3 style="font-size:1.05rem;color:#fff;margin:1.5rem 0 0.5rem 0;">Macro 3: NewPipe Media Audit</h3>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:0.75rem;">Whenever NewPipe plays video content, Ari audits the title against the active task or curriculum unit.</p>
+        <ul style="padding-left:1.25rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.88rem;">
+          <li><strong>Trigger:</strong> Notification Received &rarr; App: <strong>NewPipe</strong>.</li>
+          <li><strong>Action:</strong> HTTP Request &rarr; POST <code>/api/audit/media</code> with body <code>{"video_title": "{notification_title}"}</code> and Bearer token header.</li>
+          <li><strong>Action:</strong> If response <code>allowed == false</code>, send Home button intent and raise warning banner.</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="toastBox" class="toast-box">Copied to clipboard!</div>
+
+  <script>
+    (function () {
+      // Setup progress tracking
+      const checkboxes = document.querySelectorAll('.step-check');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+
+      function updateProgress() {
+        let done = 0;
+        checkboxes.forEach(cb => {
+          if (cb.checked) done++;
+        });
+        const total = checkboxes.length;
+        const pct = Math.round((done / total) * 100);
+        progressFill.style.width = pct + '%';
+        progressText.textContent = done + ' / ' + total;
+      }
+
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateProgress);
+      });
+
+      // Smooth scroll navigation
+      document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          const target = document.getElementById(link.dataset.target);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+
+      // Copy-to-clipboard functionality
+      const toast = document.getElementById('toastBox');
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2500);
+      }
+
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const container = btn.closest('.code-container');
+          const codeEl = container ? container.querySelector('code') : null;
+          if (codeEl) {
+            const text = codeEl.innerText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+            } else {
+              const ta = document.createElement('textarea');
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+              showToast('Copied to clipboard!');
+            }
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
