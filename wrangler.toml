@@ -8,11 +8,11 @@ crons = ["0 0 * * *"] # 03:00 AM Asia/Riyadh (UTC+3)
 [[d1_databases]]
 binding = "DB"
 database_name = "mazenos_db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "6f7ce72e-3aeb-4c8c-b2c8-c88fa0a6633a"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "00000000000000000000000000000000"
+id = "605e742a5dba43f8aae1b0caad1f9a6f"
 
 [vars]
 TIMEZONE = "Asia/Riyadh"
