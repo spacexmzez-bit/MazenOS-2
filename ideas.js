@@ -8,6 +8,10 @@ let ideas = [];
 let deepWorkLocked = true;
 let countdownInterval = null;
 let remainingSeconds = 180;
+  try {
+    const s = JSON.parse(localStorage.getItem('mazenos_settings') || '{}');
+    if (s.idea_capture_seconds) remainingSeconds = Number(s.idea_capture_seconds) || 180;
+  } catch {}
 
 function showToast(msg) {
   const c = document.getElementById('toastContainer');
@@ -148,7 +152,7 @@ async function sealCaptureCard(autoExpired = false) {
   await fetchIdeas();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   fetchIdeas();
 
   document.getElementById('startQuickCaptureBtn')?.addEventListener('click', () => {
@@ -210,4 +214,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Friday Idea Synthesis downloaded as Markdown.');
     await fetchIdeas();
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

@@ -127,7 +127,7 @@ function renderLocations() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   fetchLocations();
 
   document.getElementById('openNewLocModalBtn')?.addEventListener('click', () => {
@@ -209,7 +209,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const studyMins = Number(document.getElementById('gateFocusMinsInput').value) || 120;
     const roundTrip = (Number(loc.commute_minutes_one_way) || 15) * 2;
     const share = Math.round((roundTrip / Math.max(1, studyMins)) * 100);
-    const approved = share <= 35;
+    let maxShare = 35;
+    try {
+      const s = JSON.parse(localStorage.getItem('mazenos_settings') || '{}');
+      if (s.max_commute_ratio_percent) maxShare = Number(s.max_commute_ratio_percent) || 35;
+    } catch {}
+    const approved = share <= maxShare;
 
     box.style.display = 'block';
     box.style.borderColor = approved ? 'var(--accent-jade)' : 'var(--danger)';
@@ -217,4 +222,5 @@ document.addEventListener('DOMContentLoaded', () => {
       ? `<strong style="color:var(--accent-jade);">Approved (${share}% Transit Ratio):</strong> ${roundTrip}m round-trip to ${loc.name} leaves ${studyMins - roundTrip}m of net deep work.`
       : `<strong style="color:#fca5a5;">Blocked by Ari (${share}% Transit Ratio):</strong> ${roundTrip}m round-trip to ${loc.name} wastes too much of your ${studyMins}m block. Work from home.`;
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

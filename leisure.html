@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MazenOS — Leisure &amp; Builder Hub</title>
+  <title>MazenOS — Leisure Hub</title>
   <link rel="stylesheet" href="shared.css">
 </head>
 <body>
   <header class="os-header">
     <div class="os-brand">
       <a href="index.html" class="os-back-link">&larr; Dashboard</a>
-      <span>Leisure</span>
+      <span>Leisure Hub</span>
     </div>
     <div class="os-header-meta">
       <a href="settings.html?from=leisure" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
@@ -21,73 +21,85 @@
     <div class="card" style="margin-bottom:1.5rem;border-color:var(--accent-jade);">
       <div class="card-header">
         <div>
-          <h1 class="card-title">Friday Builder &amp; Hobby Day Safeguard</h1>
-          <p class="card-subtitle">Fridays are automatically protected for electronics (Arduino), video games, and creative coding—MacroDroid lock is suspended</p>
+          <h1 class="card-title">Friday</h1>
+          <p class="card-subtitle">Phone lock is off on Fridays for hobbies, electronics, and games</p>
         </div>
-        <span class="badge badge-success" id="fridayProtectionBadge">Protected</span>
+        <span class="badge badge-success" id="fridayProtectionBadge">Day Off</span>
       </div>
       <div class="form-row" style="margin-top:1rem;">
         <div class="card" style="background:var(--bg-elevated);">
-          <span class="card-subtitle">Weekly Completed Tasks</span>
+          <span class="card-subtitle">Completed Tasks</span>
           <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;" id="velocityCompletedCount">0</div>
         </div>
         <div class="card" style="background:var(--bg-elevated);">
-          <span class="card-subtitle">Bonus Tasks Cleared Early</span>
+          <span class="card-subtitle">Bonus Tasks Done</span>
           <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;color:var(--accent-jade);" id="velocityBonusCount">0</div>
         </div>
         <div class="card" style="background:var(--bg-elevated);">
-          <span class="card-subtitle">Unlocked Guilt-Free Leisure Quota</span>
-          <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;color:var(--accent-ari);" id="velocityLeisureHours">2.0 hrs</div>
+          <span class="card-subtitle">Focus Sessions Today</span>
+          <div style="font-size:1.6rem;font-weight:700;margin-top:0.2rem;color:var(--accent-ari);" id="velocityFocusSessions">0</div>
         </div>
       </div>
     </div>
 
     <div class="form-row">
-      <!-- Focus Session & Hydration Tracker -->
+      <!-- Configurable Focus Timer (Pomodoro & Multiple Systems) -->
       <div class="card">
         <div class="card-header">
           <div>
-            <h2 class="card-title">Log Focus Block</h2>
-            <p class="card-subtitle">Feeds weekly task velocity and triggers AI Mom hydration reminder at 150+ continuous minutes</p>
+            <h2 class="card-title">Focus Timer</h2>
+            <p class="card-subtitle">Choose a timer preset or customize your work &amp; break minutes</p>
+          </div>
+          <span class="badge badge-p3" id="leisureTimerPhaseBadge">Work</span>
+        </div>
+
+        <div class="form-group">
+          <label for="timerPresetSelect">Timer System</label>
+          <select id="timerPresetSelect">
+            <option value="25,5">Pomodoro (25m work / 5m break)</option>
+            <option value="50,10">Extended Pomodoro (50m work / 10m break)</option>
+            <option value="52,17">52 / 17 Method (52m work / 17m break)</option>
+            <option value="90,20">Deep Work Block (90m work / 20m break)</option>
+            <option value="custom">Custom Durations</option>
+          </select>
+        </div>
+
+        <div class="form-row" id="customTimerInputsRow" style="display:none;">
+          <div class="form-group">
+            <label for="customWorkMins">Work (Minutes)</label>
+            <input type="number" id="customWorkMins" min="1" max="180" value="25">
+          </div>
+          <div class="form-group">
+            <label for="customBreakMins">Break (Minutes)</label>
+            <input type="number" id="customBreakMins" min="1" max="60" value="5">
           </div>
         </div>
-        <form id="focusSessionForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="focusDurationInput">Duration (Minutes)</label>
-              <input type="number" id="focusDurationInput" min="10" max="240" value="45" required>
-            </div>
-            <div class="form-group">
-              <label for="focusTypeSelect">Session Type</label>
-              <select id="focusTypeSelect">
-                <option value="deep_work">Deep Work</option>
-                <option value="pomodoro">Pomodoro</option>
-                <option value="break">Recovery Break</option>
-              </select>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary">Record Focus Session</button>
-        </form>
+
+        <div style="text-align:center;padding:1.1rem 0;">
+          <div id="leisureTimerDisplay" style="font-family:var(--font-mono);font-size:3rem;font-weight:700;letter-spacing:0.04em;">25:00</div>
+        </div>
+
+        <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary" id="leisureTimerStartBtn">Start</button>
+          <button type="button" class="btn btn-secondary" id="leisureTimerResetBtn">Reset</button>
+          <button type="button" class="btn btn-secondary" id="leisureTimerSkipBtn">Switch Work/Break</button>
+        </div>
       </div>
 
-      <!-- Schedule Entertainment & Builder Slot -->
+      <!-- Hobbies as Lower-Priority Tasks (No Time Windows) -->
       <div class="card">
         <div class="card-header">
           <div>
-            <h2 class="card-title">Schedule Hobby / Leisure Window</h2>
-            <p class="card-subtitle">Plan Arduino builds, gaming sessions, or Friday builder projects</p>
+            <h2 class="card-title">Hobbies &amp; Side Projects</h2>
+            <p class="card-subtitle">Added as low-priority tasks without fixed time windows</p>
           </div>
         </div>
         <form id="hobbySlotForm">
           <div class="form-group">
-            <label for="hobbyTitleInput">Activity / Project</label>
-            <input type="text" id="hobbyTitleInput" placeholder="e.g., Arduino ESP32 Sensor Build / Gaming Session" required>
+            <label for="hobbyTitleInput">Hobby or Project Task</label>
+            <input type="text" id="hobbyTitleInput" placeholder="e.g., Arduino ESP32 sensor build, Play Hollow Knight" required>
           </div>
-          <div class="form-group">
-            <label for="hobbySlotInput">Day &amp; Time Window</label>
-            <input type="text" id="hobbySlotInput" placeholder="Friday 14:00 - 18:00" value="Friday 14:00 - 18:00" required>
-          </div>
-          <button type="submit" class="btn btn-jade">Save Leisure Slot</button>
+          <button type="submit" class="btn btn-jade">+ Add Low-Priority Hobby Task</button>
         </form>
         <div id="hobbySlotsList" style="margin-top:1rem;"></div>
       </div>

@@ -65,17 +65,26 @@ async function loadHealthState() {
     }
   } catch {}
 
+  let threshold = 4.0;
+  try {
+    const s = JSON.parse(localStorage.getItem('mazenos_settings') || '{}');
+    if (s.burnout_sleep_threshold) threshold = Number(s.burnout_sleep_threshold) || 4.0;
+  } catch {}
+
   // Populate health.html if present
   const sleepInput = document.getElementById('sleepHoursInput');
   if (sleepInput) {
     if (today.sleep_hours != null) sleepInput.value = today.sleep_hours;
-    if (today.energy_score != null) document.getElementById('energyScoreInput').value = today.energy_score;
-    document.getElementById('workoutTypeInput').value = today.workout_type || '';
-    document.getElementById('workoutCompletedCheck').checked = Boolean(today.workout_completed);
+    const enEl = document.getElementById('energyScoreInput');
+    if (enEl && today.energy_score != null) enEl.value = today.energy_score;
+    const wtEl = document.getElementById('workoutTypeInput');
+    if (wtEl) wtEl.value = today.workout_type || '';
+    const wcEl = document.getElementById('workoutCompletedCheck');
+    if (wcEl) wcEl.checked = Boolean(today.workout_completed);
 
     const burnoutBanner = document.getElementById('burnoutAlertBanner');
     if (burnoutBanner) {
-      burnoutBanner.style.display = (today.sleep_hours != null && Number(today.sleep_hours) < 4.0) ? 'block' : 'none';
+      burnoutBanner.style.display = (today.sleep_hours != null && Number(today.sleep_hours) < threshold) ? 'block' : 'none';
     }
     const medBadge = document.getElementById('medSummaryBadge');
     if (medBadge) medBadge.textContent = `${today.medicine_taken_count || 0} / ${today.medicine_target_count || 0} Doses`;
@@ -100,7 +109,7 @@ async function loadHealthState() {
   const sickToggle = document.getElementById('isSickToggle');
   if (sickToggle) {
     sickToggle.checked = Boolean(today.is_sick);
-    document.getElementById('sicknessNotesInput').value = today.sickness_notes || '';
+    const snEl = document.getElementById('sicknessNotesInput'); if (snEl) snEl.value = today.sickness_notes || '';
     const statusBadge = document.getElementById('sickStatusBadge');
     if (statusBadge) {
       statusBadge.textContent = today.is_sick ? 'Sickness Protocol Active (Phone Unlocked)' : 'Inactive';
@@ -122,7 +131,7 @@ async function persistHealthUpdate(partial) {
   await loadHealthState();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   loadHealthState();
 
   document.getElementById('healthMainForm')?.addEventListener('submit', async (e) => {
@@ -179,4 +188,5 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Sickness Mode deactivated. Normal execution resumed.');
     }
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

@@ -1,7 +1,7 @@
+import { mountSharedBreakModal } from './breaks-shared.js';
 /**
- * MazenOS Central Dashboard Logic (dashboard.js)
- * Connects Ari/Jade Chat, History Rollback Drawer, Rate-Limit Provider Interceptor,
- * AI Mom Continuous Work Alert, and Live Status Strip.
+ * MazenOS Dashboard Logic (dashboard.js)
+ * Connects Ari & Jade Chat, History Drawer, Ari Expense Logging, and Break Reminders.
  */
 
 const state = {
@@ -10,17 +10,6 @@ const state = {
   pendingRetryMessage: null,
   suggestedProvider: null
 };
-
-function getAuthHeaders() {
-  let token = '';
-  try {
-    token = localStorage.getItem('mazenos_auth_token') || '';
-  } catch {}
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
-}
 
 function getLocalStore(key, fallback) {
   try {
@@ -59,66 +48,6 @@ function checkContinuousWorkAlert() {
   }
 }
 
-async function refreshStatusStrip() {
-  try {
-    const res = await fetch('/api/state', { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Offline mode');
-    const data = await res.json();
-    renderStatusStrip(data);
-  } catch {
-    const tasks = getLocalStore('mazenos_tasks', []);
-    const activeP1 = tasks.find(t => t.priority === 1 && t.status !== 'completed');
-    const healthLogs = getLocalStore('mazenos_health_logs', {});
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const todayHealth = healthLogs[todayKey] || null;
-    const budget = getLocalStore('mazenos_budget', []);
-    const latestBal = budget.length > 0 && budget[0].balance_after_sar != null ? budget[0].balance_after_sar : 0;
-
-    renderStatusStrip({
-      locked: false,
-      active_p1: activeP1 ? { title: activeP1.title } : null,
-      health: todayHealth ? {
-        sleep_hours: todayHealth.sleep_hours,
-        meds: `${todayHealth.medicine_taken_count || 0}/${todayHealth.medicine_target_count || 0}`,
-        is_sick: todayHealth.is_sick
-      } : null,
-      budget_balance_sar: latestBal
-    });
-
-    const activeCount = tasks.filter(t => t.status !== 'completed').length;
-    const cardTaskCount = document.getElementById('cardTaskCount');
-    if (cardTaskCount) cardTaskCount.textContent = `${activeCount} Active`;
-
-    const units = getLocalStore('mazenos_curriculum', []);
-    const cardCurryCount = document.getElementById('cardCurryCount');
-    if (cardCurryCount) cardCurryCount.textContent = `${units.length} Units`;
-  }
-}
-
-function renderStatusStrip(data) {
-  const lockPill = document.getElementById('statusLockPill');
-  const p1Pill = document.getElementById('statusP1Pill');
-  const healthPill = document.getElementById('statusHealthPill');
-  const budgetPill = document.getElementById('statusBudgetPill');
-
-  if (lockPill) {
-    lockPill.textContent = data.locked ? 'Phone Status: Locked (Overdue P1)' : 'Phone Status: Unlocked';
-  }
-  if (p1Pill) {
-    p1Pill.textContent = data.active_p1 ? `Active Priority 1: ${data.active_p1.title}` : 'Active Priority 1: None';
-  }
-  if (healthPill) {
-    if (data.health && data.health.sleep_hours != null) {
-      healthPill.textContent = `Sleep: ${data.health.sleep_hours}h | Meds: ${data.health.meds}${data.health.is_sick ? ' (Sick Mode)' : ''}`;
-    } else {
-      healthPill.textContent = 'Sleep & Meds: Not logged today';
-    }
-  }
-  if (budgetPill) {
-    budgetPill.textContent = `Balance: ${Number(data.budget_balance_sar || 0).toFixed(2)} SAR`;
-  }
-}
-
 function setAgent(agent) {
   state.activeAgent = agent === 'jade' ? 'jade' : 'ari';
   const ariBtn = document.getElementById('switchAriBtn');
@@ -126,30 +55,30 @@ function setAgent(agent) {
   const titleEl = document.getElementById('activeAgentTitle');
   const subEl = document.getElementById('activeAgentSubtitle');
   const sendBtn = document.getElementById('sendChatBtn');
+  const inputEl = document.getElementById('chatInput');
 
   if (state.activeAgent === 'ari') {
     ariBtn.className = 'agent-btn active-ari';
     jadeBtn.className = 'agent-btn';
-    titleEl.textContent = 'Ari — Execution & Scheduling';
-    subEl.textContent = 'Direct, disciplined task scheduling and proof verification';
+    titleEl.textContent = 'Ari';
+    subEl.textContent = 'Tasks, schedule & budget';
     sendBtn.className = 'btn btn-primary';
+    if (inputEl) inputEl.placeholder = 'Message Ari...';
   } else {
     ariBtn.className = 'agent-btn';
     jadeBtn.className = 'agent-btn active-jade';
-    titleEl.textContent = 'Jade — Perspective & Debrief';
-    subEl.textContent = 'Grounded support, emotional regulation, and diary reflection';
+    titleEl.textContent = 'Jade';
+    subEl.textContent = 'Chat & journal';
     sendBtn.className = 'btn btn-jade';
+    if (inputEl) inputEl.placeholder = 'Message Jade...';
   }
   loadChatHistory();
 }
 
 async function loadChatHistory() {
-  const stream = document.getElementById('chatStream');
   let messages = [];
   try {
-    const res = await fetch(`/api/chat/history?session_id=${encodeURIComponent(state.sessionId)}&agent=${state.activeAgent}`, {
-      headers: getAuthHeaders()
-    });
+    const res = await fetch(`/api/chat/history?session_id=${encodeURIComponent(state.sessionId)}&agent=${state.activeAgent}`);
     if (!res.ok) throw new Error('Local fallback');
     const data = await res.json();
     messages = data.messages || [];
@@ -170,10 +99,10 @@ function renderMessages(messages) {
   if (!messages || messages.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.innerHTML = `<h3>Start a conversation with ${state.activeAgent === 'ari' ? 'Ari' : 'Jade'}</h3>
+    empty.innerHTML = `<h3>Chat with ${state.activeAgent === 'ari' ? 'Ari' : 'Jade'}</h3>
       <p>${state.activeAgent === 'ari'
-        ? 'Ari schedules tasks, checks commute friction, and audits completion proofs.'
-        : 'Jade helps you reflect on your week, regulate stress, and debrief diary entries.'}</p>`;
+        ? 'Ask Ari to plan your tasks, log an expense, or check your schedule.'
+        : 'Talk through your day with Jade or reflect on your journal.'}</p>`;
     stream.appendChild(empty);
     return;
   }
@@ -199,13 +128,44 @@ function renderHistorySessions() {
     btn.type = 'button';
     btn.className = 'btn btn-sm btn-secondary';
     btn.style.justifyContent = 'flex-start';
-    btn.textContent = sId === 'session_main' ? 'Default Conversation' : sId;
+    btn.textContent = sId === 'session_main' ? 'Main Chat' : sId;
     btn.addEventListener('click', () => {
       state.sessionId = sId;
       loadChatHistory();
     });
     listEl.appendChild(btn);
   }
+}
+
+function tryParseExpenseFromChat(text) {
+  if (state.activeAgent !== 'ari') return null;
+  const lower = text.toLowerCase();
+  const hasSpendVerb = /\b(spent|paid|bought|expense|log|cost|purchase)\b/i.test(lower);
+  const amtMatch = text.match(/(?:SAR|SR|ريال)\s*([0-9]+(?:\.[0-9]{1,2})?)/i) ||
+                   text.match(/([0-9]+(?:\.[0-9]{1,2})?)\s*(?:SAR|SR|ريال)/i);
+  if (!hasSpendVerb || !amtMatch) return null;
+  const amount = parseFloat(amtMatch[1]);
+  if (!amount || amount <= 0) return null;
+  const merchMatch = text.match(/(?:at|for|from|on)\s+([A-Za-z0-9\s&'-]{2,35})/i);
+  const merchant = merchMatch ? merchMatch[1].trim() : 'Expense via Ari';
+  const settings = getLocalStore('mazenos_settings', {});
+  const entry = {
+    id: `tx_${Date.now()}`,
+    wallet_source: settings.default_wallet_name || 'Card *4821',
+    merchant,
+    amount_sar: amount,
+    balance_after_sar: null,
+    transaction_timestamp: new Date().toISOString().slice(0, 16).replace('T', ' ')
+  };
+  const budget = getLocalStore('mazenos_budget', []);
+  budget.unshift(entry);
+  setLocalStore('mazenos_budget', budget);
+  fetch('/api/budget', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry)
+  }).catch(() => {});
+  return entry;
 }
 
 async function sendChatMessage(messageText, overrideProvider = null) {
@@ -221,10 +181,12 @@ async function sendChatMessage(messageText, overrideProvider = null) {
   setLocalStore('mazenos_chat_messages', allLocal);
   await loadChatHistory();
 
+  const loggedExpense = tryParseExpenseFromChat(messageText);
+
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         session_id: state.sessionId,
         agent: state.activeAgent,
@@ -239,7 +201,7 @@ async function sendChatMessage(messageText, overrideProvider = null) {
         state.pendingRetryMessage = messageText;
         state.suggestedProvider = errData.suggested_provider || 'claude';
         document.getElementById('rateLimitMessage').textContent =
-          `Your ${errData.exhausted_provider} pool hit an HTTP 429 limit. Switch to ${state.suggestedProvider} with one tap?`;
+          `${errData.exhausted_provider} is rate-limited right now. Switch to ${state.suggestedProvider}?`;
         document.getElementById('rateLimitModal').classList.add('open');
         return;
       }
@@ -247,24 +209,33 @@ async function sendChatMessage(messageText, overrideProvider = null) {
 
     if (!res.ok) throw new Error('Worker offline');
     const data = await res.json();
+    const replyText = loggedExpense
+      ? `${data.reply}\n\n(Logged ${loggedExpense.amount_sar.toFixed(2)} SAR at ${loggedExpense.merchant} to Budget.)`
+      : data.reply;
+
     allLocal.push({
       id: `msg_${Date.now() + 1}`,
       session_id: state.sessionId,
       agent: state.activeAgent,
       sender: 'assistant',
-      message_text: data.reply,
+      message_text: replyText,
       created_at: new Date().toISOString()
     });
     setLocalStore('mazenos_chat_messages', allLocal);
     await loadChatHistory();
   } catch {
-    const tasks = getLocalStore('mazenos_tasks', []);
-    const p1 = tasks.find(t => t.priority === 1 && t.status !== 'completed');
-    const reply = state.activeAgent === 'ari'
-      ? (p1
-          ? `Ari: Your active Priority 1 task is "${p1.title}". Focus on finishing it before taking on secondary items.`
-          : `Ari: Queue is clear of Priority 1 blockers. Log your next target in Tasks or review your syllabus units in Curry.`)
-      : `Jade: Take a steady breath. You are keeping your system organized—let's focus on one calm, meaningful step at a time.`;
+    let reply = '';
+    if (loggedExpense) {
+      reply = `Ari: Logged ${loggedExpense.amount_sar.toFixed(2)} SAR (${loggedExpense.merchant}) to your Budget.`;
+    } else if (state.activeAgent === 'ari') {
+      const tasks = getLocalStore('mazenos_tasks', []);
+      const p1 = tasks.find(t => Number(t.priority) === 1 && t.status !== 'completed');
+      reply = p1
+        ? `Ari: Your top priority task is "${p1.title}". Finish that first before moving to other items.`
+        : `Ari: You have no urgent tasks right now. Open Taskitator to plan your next study block.`;
+    } else {
+      reply = `Jade: Take a breath. How is your day going so far?`;
+    }
 
     allLocal.push({
       id: `msg_${Date.now() + 1}`,
@@ -279,10 +250,10 @@ async function sendChatMessage(messageText, overrideProvider = null) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   updateDateHeader();
+  mountSharedBreakModal('osHeaderBreakPill');
   checkContinuousWorkAlert();
-  refreshStatusStrip();
   loadChatHistory();
 
   document.getElementById('switchAriBtn')?.addEventListener('click', () => setAgent('ari'));
@@ -321,4 +292,5 @@ document.addEventListener('DOMContentLoaded', () => {
       state.pendingRetryMessage = null;
     }
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

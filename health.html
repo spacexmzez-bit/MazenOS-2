@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MazenOS — Health</title>
+  <title>MazenOS — Sleep & Health</title>
   <link rel="stylesheet" href="shared.css">
 </head>
 <body>
   <header class="os-header">
     <div class="os-brand">
       <a href="index.html" class="os-back-link">&larr; Dashboard</a>
-      <span>Health</span>
+      <span>Sleep &amp; Health</span>
     </div>
     <div class="os-header-meta">
       <a href="settings.html?from=health" class="gear-link" title="Settings" aria-label="Settings">&#9881;</a>
@@ -20,8 +20,8 @@
   <main class="os-container">
     <!-- Burnout Alert Banner (< 4 hours of sleep) -->
     <div id="burnoutAlertBanner" class="card" style="display:none;margin-bottom:1.5rem;border-color:var(--danger);background:var(--danger-soft);">
-      <strong style="color:#fca5a5;">Acute Exhaustion Warning:</strong>
-      <p style="font-size:0.9rem;margin-top:0.25rem;">Logged sleep is below 4.0 hours. Ari recommends capping high-friction study blocks today.</p>
+      <strong style="color:#fca5a5;">Low Sleep Warning:</strong>
+      <p style="font-size:0.9rem;margin-top:0.25rem;">You slept less than 4 hours. Take it easy today.</p>
     </div>
 
     <div class="form-row" style="margin-bottom:1.5rem;">
@@ -42,8 +42,8 @@
           <span class="badge badge-success" id="sickSummaryBadge">Normal Mode</span>
         </div>
         <div>
-          <div class="card-title">Sickness Protocol</div>
-          <div class="card-subtitle">Circuit breaker to freeze P1 chains and unlock phone</div>
+          <div class="card-title">Sick Mode</div>
+          <div class="card-subtitle">Pause urgent tasks and unlock phone while recovering</div>
         </div>
       </a>
     </div>

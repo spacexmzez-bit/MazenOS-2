@@ -4,14 +4,528 @@
  * Consecutive Task Cascading Engine, Bank SMS Regex Parser & 03:00 AM Cron Engine.
  */
 
-import {
-  buildCompactState,
-  runAgentChat,
-  evaluateTaskProof,
-  evaluateMediaRelevance,
-  synthesizeIdeasMarkdown
-} from './worker-ai.js';
 
+
+// ============================================================================
+// EMBEDDED AI ENGINE (Model allocation, Persona prompts & Vision audits)
+// ============================================================================
+/**
+ * MazenOS Dual-AI Engine, Model Allocation Waterfall, Dynamic State Injection & Multimodal Audits
+ */
+
+const MODEL_POOLS = {
+  gemini: {
+    light: ['gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'],
+    smart: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+  },
+  claude: {
+    light: ['claude-3-5-haiku-latest'],
+    smart: ['claude-3-5-sonnet-latest']
+  }
+};
+
+const PERSONA_PROMPTS = {
+  ari: `You are Ari, the execution and scheduling operating intelligence of MazenOS.
+Voice & Rules:
+- Direct, disciplined, concise, analytical.
+- You schedule tasks, enforce consecutive task dependencies, audit completion proofs rigorously, and refuse comfort excuses.
+- Respect the user's health circuit breaker (if is_sick is true, suspend academic pressure and advise recovery).
+- Evaluate commute friction before approving travel to external study locations.
+- Never use filler or motivational platitudes.`,
+  jade: `You are Jade, the reflective and emotional regulation companion of MazenOS.
+Voice & Rules:
+- Grounded, warm, perceptive, supportive.
+- Provide calm perspective, cognitive reframing, emotional regulation, and weekly diary debriefs.
+- Help process burnout, stress, or friction without judgment while keeping advice practical and human.`
+};
+
+/**
+ * Queries D1 to construct a compact (<120 tokens) dynamic state JSON block
+ */
+async function buildCompactState(env) {
+  const now = new Date();
+  const riyadhFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  const parts = riyadhFormatter.formatToParts(now);
+  const map = {};
+  for (const p of parts) map[p.type] = p.value;
+  const todayStr = `${map.year}-${map.month}-${map.day}`;
+  const timeNowStr = `${todayStr} ${map.hour}:${map.minute} AST`;
+
+  // Active P1 task
+  const activeP1 = await env.DB.prepare(
+    `SELECT id, title, due_timestamp, is_consecutive, pomodoro_count, pomodoro_estimated FROM tasks
+     WHERE status IN ('pending', 'in_progress') AND priority = 1
+     ORDER BY CASE WHEN due_timestamp IS NULL THEN 1 ELSE 0 END, due_timestamp ASC LIMIT 1`
+  ).first();
+
+  // Downstream consecutive chain
+  let downstreamChain = [];
+  if (activeP1) {
+    const depRows = await env.DB.prepare(
+      `SELECT id FROM tasks WHERE depends_on_task_id = ? AND status != 'completed' LIMIT 4`
+    ).bind(activeP1.id).all();
+    downstreamChain = (depRows.results || []).map(r => r.id);
+  }
+
+  // Health log for today
+  const healthRow = await env.DB.prepare(
+    `SELECT sleep_hours, energy_score, is_sick, medicine_taken_count, medicine_target_count
+     FROM daily_health_logs WHERE date = ?`
+  ).bind(todayStr).first();
+
+  // Pomodoro sessions today
+  const pomodoroRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS sessions_count, SUM(duration_minutes) AS total_focus_mins
+     FROM focus_sessions WHERE date(started_at) = ? AND completed_at IS NOT NULL`
+  ).bind(todayStr).first();
+
+  // Unified Daily Breaks & Day Start Hour (shared between MazenOS and Taskitator)
+  const breakSettingsRows = await env.DB.prepare(
+    `SELECT key, value FROM system_settings WHERE key IN ('daily_breaks_state', 'daily_breaks_json', 'day_start_hour')`
+  ).all();
+  const breakMap = {};
+  for (const r of (breakSettingsRows.results || [])) breakMap[r.key] = r.value;
+  const dayStartHour = Math.max(0, Math.min(4, parseInt(breakMap.day_start_hour ?? '0', 10) || 0));
+  const todayBreaks = extractTodayBreaksList(breakMap.daily_breaks_state, breakMap.daily_breaks_json, todayStr);
+
+  // Latest budget balance
+  const budgetRow = await env.DB.prepare(
+    `SELECT balance_after_sar FROM budget_entries
+     WHERE balance_after_sar IS NOT NULL
+     ORDER BY COALESCE(transaction_timestamp, created_at) DESC LIMIT 1`
+  ).first();
+
+  // Active task & curriculum counts for dashboard cards
+  const taskCountRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS cnt FROM tasks WHERE status IN ('pending', 'in_progress')`
+  ).first();
+  const curryCountRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS cnt FROM curriculum_units`
+  ).first();
+
+  const isSick = healthRow ? Boolean(healthRow.is_sick) : false;
+  const isOverdueP1 = Boolean(
+    activeP1 &&
+    activeP1.due_timestamp &&
+    !Number.isNaN(Date.parse(activeP1.due_timestamp)) &&
+    Date.now() > Date.parse(activeP1.due_timestamp)
+  );
+  const locked = isOverdueP1 && !isSick;
+
+  return {
+    time_now: timeNowStr,
+    active_p1: activeP1 ? {
+      id: activeP1.id,
+      title: activeP1.title,
+      due: activeP1.due_timestamp ? activeP1.due_timestamp.slice(11, 16) : null,
+      is_consecutive: Boolean(activeP1.is_consecutive),
+      pomodoro_spent: activeP1.pomodoro_count || 0,
+      pomodoro_est: activeP1.pomodoro_estimated || 1
+    } : null,
+    pomodoro_metrics: {
+      sessions_today: pomodoroRow ? (pomodoroRow.sessions_count || 0) : 0,
+      focus_minutes_today: pomodoroRow ? (pomodoroRow.total_focus_mins || 0) : 0
+    },
+    downstream_chain: downstreamChain,
+    health: {
+      sleep_hours: healthRow ? healthRow.sleep_hours : null,
+      energy: healthRow ? healthRow.energy_score : null,
+      is_sick: healthRow ? Boolean(healthRow.is_sick) : false,
+      meds: healthRow ? `${healthRow.medicine_taken_count || 0}/${healthRow.medicine_target_count || 0}` : '0/0'
+    },
+    day_start_hour: dayStartHour,
+    daily_breaks: todayBreaks,
+    budget_balance_sar: budgetRow ? budgetRow.balance_after_sar : 0,
+    active_tasks_count: taskCountRow ? (taskCountRow.cnt || 0) : 0,
+    curriculum_units_count: curryCountRow ? (curryCountRow.cnt || 0) : 0,
+    locked
+  };
+}
+
+/**
+ * Load AI configuration and API keys from system_settings
+ */
+async function getAIConfig(env) {
+  const rows = await env.DB.prepare(
+    `SELECT key, value FROM system_settings WHERE key IN ('ai_provider', 'model_tier', 'gemini_api_key', 'claude_api_key')`
+  ).all();
+  const cfg = {
+    ai_provider: env.DEFAULT_AI_PROVIDER || 'gemini',
+    model_tier: env.DEFAULT_MODEL_TIER || 'light',
+    gemini_api_key: env.GEMINI_API_KEY || '',
+    claude_api_key: env.CLAUDE_API_KEY || ''
+  };
+  for (const r of (rows.results || [])) {
+    if (r.value) cfg[r.key] = r.value;
+  }
+  return cfg;
+}
+
+/**
+ * Call Gemini API with automatic fallback across the tier's model waterfall on HTTP 429
+ */
+async function callGeminiWaterfall({ apiKey, tier, systemPrompt, messages, mediaPart }) {
+  if (!apiKey) {
+    throw new Error('Missing Gemini API key in Settings.');
+  }
+  const models = MODEL_POOLS.gemini[tier] || MODEL_POOLS.gemini.light;
+  let lastStatus = 500;
+  let lastErrorText = '';
+
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const contents = messages.map(m => ({
+      role: m.sender === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.message_text }]
+    }));
+
+    if (mediaPart && contents.length > 0) {
+      contents[contents.length - 1].parts.push({
+        inline_data: {
+          mime_type: mediaPart.mimeType,
+          data: mediaPart.base64Data
+        }
+      });
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: { temperature: 0.4, maxOutputTokens: 800 }
+      })
+    });
+
+    if (res.status === 429) {
+      lastStatus = 429;
+      lastErrorText = await res.text();
+      continue; // Silent fallback to next model in pool
+    }
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Gemini error (${res.status}): ${errBody}`);
+    }
+
+    const data = await res.json();
+    const reply = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    return { reply, modelUsed: model, provider: 'gemini' };
+  }
+
+  if (lastStatus === 429) {
+    const err = new Error('RATE_LIMIT_POOL_EXHAUSTED');
+    err.code = 'PROVIDER_POOL_EXHAUSTED';
+    err.provider = 'gemini';
+    err.suggestedProvider = 'claude';
+    err.details = lastErrorText;
+    throw err;
+  }
+  throw new Error(`Gemini waterfall failed: ${lastErrorText}`);
+}
+
+/**
+ * Call Claude API with pool support and 429 interceptor
+ */
+async function callClaudeWaterfall({ apiKey, tier, systemPrompt, messages, mediaPart }) {
+  if (!apiKey) {
+    throw new Error('Missing Claude API key in Settings.');
+  }
+  const models = MODEL_POOLS.claude[tier] || MODEL_POOLS.claude.light;
+  let lastStatus = 500;
+  let lastErrorText = '';
+
+  for (const model of models) {
+    const formattedMessages = messages.map((m, idx) => {
+      const isLast = idx === messages.length - 1;
+      if (isLast && mediaPart && m.sender === 'user') {
+        return {
+          role: 'user',
+          content: [
+            {
+              type: mediaPart.mimeType === 'application/pdf' ? 'document' : 'image',
+              source: {
+                type: 'base64',
+                media_type: mediaPart.mimeType,
+                data: mediaPart.base64Data
+              }
+            },
+            { type: 'text', text: m.message_text }
+          ]
+        };
+      }
+      return {
+        role: m.sender === 'assistant' ? 'assistant' : 'user',
+        content: m.message_text
+      };
+    });
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 800,
+        system: systemPrompt,
+        messages: formattedMessages
+      })
+    });
+
+    if (res.status === 429) {
+      lastStatus = 429;
+      lastErrorText = await res.text();
+      continue;
+    }
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Claude error (${res.status}): ${errBody}`);
+    }
+
+    const data = await res.json();
+    const reply = (data?.content || []).map(c => c.text || '').join('');
+    return { reply, modelUsed: model, provider: 'claude' };
+  }
+
+  if (lastStatus === 429) {
+    const err = new Error('RATE_LIMIT_POOL_EXHAUSTED');
+    err.code = 'PROVIDER_POOL_EXHAUSTED';
+    err.provider = 'claude';
+    err.suggestedProvider = 'gemini';
+    err.details = lastErrorText;
+    throw err;
+  }
+  throw new Error(`Claude waterfall failed: ${lastErrorText}`);
+}
+
+/**
+ * Main chat completion entry point with <120-token dynamic state injection & 6-message history cap
+ */
+async function runAgentChat(env, { sessionId, agent = 'ari', userMessage, overrideProvider }) {
+  const cfg = await getAIConfig(env);
+  const provider = overrideProvider || cfg.ai_provider || 'gemini';
+  const tier = cfg.model_tier || 'light';
+
+  const compactState = await buildCompactState(env);
+  const personaBase = PERSONA_PROMPTS[agent] || PERSONA_PROMPTS.ari;
+
+  // Inject longitudinal diary summary for Jade when relevant
+  let jadeDiaryContext = '';
+  if (agent === 'jade') {
+    const recentDiaries = await env.DB.prepare(
+      `SELECT mood_tag, substr(entry_text, 1, 120) AS snippet, created_at
+       FROM diary_entries ORDER BY created_at DESC LIMIT 3`
+    ).all();
+    if (recentDiaries.results && recentDiaries.results.length > 0) {
+      jadeDiaryContext = `\nRECENT_DIARY_NOTES: ${JSON.stringify(recentDiaries.results)}`;
+    }
+  }
+
+  const systemPrompt = `${personaBase}\nSTATE_JSON: ${JSON.stringify(compactState)}${jadeDiaryContext}`;
+
+  // Fetch last 5 prior messages + current user message = 6 messages max in API payload
+  const historyRows = await env.DB.prepare(
+    `SELECT sender, message_text FROM chat_messages
+     WHERE session_id = ? AND agent = ?
+     ORDER BY created_at DESC LIMIT 5`
+  ).bind(sessionId, agent).all();
+
+  const recentHistory = (historyRows.results || []).reverse();
+  const payloadMessages = [
+    ...recentHistory,
+    { sender: 'user', message_text: userMessage }
+  ].slice(-6);
+
+  if (provider === 'claude') {
+    return await callClaudeWaterfall({
+      apiKey: cfg.claude_api_key,
+      tier,
+      systemPrompt,
+      messages: payloadMessages
+    });
+  } else {
+    return await callGeminiWaterfall({
+      apiKey: cfg.gemini_api_key,
+      tier,
+      systemPrompt,
+      messages: payloadMessages
+    });
+  }
+}
+
+/**
+ * Multimodal Task Proof Audit (Zero-Simulation Policy: fails closed if AI call fails)
+ */
+async function evaluateTaskProof(env, { task, mimeType, base64Data }) {
+  const cfg = await getAIConfig(env);
+  const provider = cfg.ai_provider || 'gemini';
+  // Multimodal audits always use Smart tier for high accuracy
+  const tier = 'smart';
+
+  const systemPrompt = `You are Ari's Multimodal Proof Auditor.
+Evaluate the uploaded proof strictly against the task requirements and audit criteria.
+Return ONLY valid JSON with exact keys:
+{"verdict": "passed" | "failed", "score": 1..10, "critique": "concise factual assessment"}`;
+
+  const promptText = `Task Title: ${task.title}
+Task Description: ${task.description || 'None'}
+Audit Criteria: ${task.ai_audit_criteria || 'Clear visual evidence of completed work.'}
+Inspect the attached proof and respond strictly with JSON.`;
+
+  const messages = [{ sender: 'user', message_text: promptText }];
+  const mediaPart = { mimeType, base64Data };
+
+  let result;
+  if (provider === 'claude') {
+    result = await callClaudeWaterfall({
+      apiKey: cfg.claude_api_key,
+      tier,
+      systemPrompt,
+      messages,
+      mediaPart
+    });
+  } else {
+    result = await callGeminiWaterfall({
+      apiKey: cfg.gemini_api_key,
+      tier,
+      systemPrompt,
+      messages,
+      mediaPart
+    });
+  }
+
+  const cleaned = result.reply.replace(/```json|```/gi, '').trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    // Zero-Simulation Policy: fail closed if response is malformed
+    throw new Error('Audit response did not match strict verification format. Audit failed closed.');
+  }
+
+  const verdict = parsed.verdict === 'passed' ? 'passed' : 'failed';
+  const score = Math.max(1, Math.min(10, Number(parsed.score) || (verdict === 'passed' ? 8 : 3)));
+  const critique = String(parsed.critique || 'Evaluated by Ari vision auditor.');
+
+  return { verdict, score, critique, modelUsed: result.modelUsed, provider: result.provider };
+}
+
+/**
+ * NewPipe Video Title Relevance Audit (/api/audit/media)
+ */
+async function evaluateMediaRelevance(env, { videoTitle, channelName }) {
+  const cfg = await getAIConfig(env);
+  const activeTask = await env.DB.prepare(
+    `SELECT id, title, description, requires_video FROM tasks
+     WHERE status IN ('in_progress', 'pending')
+     ORDER BY priority ASC, due_timestamp ASC LIMIT 1`
+  ).first();
+
+  const activeUnit = await env.DB.prepare(
+    `SELECT exam_name, topic_title FROM curriculum_units
+     WHERE status IN ('in_progress', 'not_started')
+     ORDER BY is_main_objective DESC, unit_number ASC LIMIT 1`
+  ).first();
+
+  if (!activeTask && !activeUnit) {
+    return { allowed: true, reason: 'No active study block or task restriction.' };
+  }
+
+  const systemPrompt = `You are Ari's NewPipe Media Auditor. Determine whether the requested video is directly relevant to the user's active task or study curriculum unit. Return ONLY JSON: {"allowed": true|false, "reason": "short explanation"}`;
+  const userText = `Video Title: "${videoTitle}" (Channel: "${channelName || 'Unknown'}")
+Active Task: ${activeTask ? `${activeTask.title} (${activeTask.description || ''})` : 'None'}
+Active Curriculum Unit: ${activeUnit ? `${activeUnit.exam_name} - ${activeUnit.topic_title}` : 'None'}`;
+
+  const provider = cfg.ai_provider || 'gemini';
+  const res = provider === 'claude'
+    ? await callClaudeWaterfall({
+        apiKey: cfg.claude_api_key,
+        tier: 'light',
+        systemPrompt,
+        messages: [{ sender: 'user', message_text: userText }]
+      })
+    : await callGeminiWaterfall({
+        apiKey: cfg.gemini_api_key,
+        tier: 'light',
+        systemPrompt,
+        messages: [{ sender: 'user', message_text: userText }]
+      });
+
+  try {
+    const parsed = JSON.parse(res.reply.replace(/```json|```/gi, '').trim());
+    return {
+      allowed: Boolean(parsed.allowed),
+      reason: String(parsed.reason || 'Evaluated against active study unit.'),
+      provider: res.provider,
+      modelUsed: res.modelUsed
+    };
+  } catch {
+    return { allowed: false, reason: 'Media audit could not verify study relevance (fail-closed).' };
+  }
+}
+
+/**
+ * Friday Idea Vault Synthesis
+ */
+async function synthesizeIdeasMarkdown(env, ideas) {
+  const cfg = await getAIConfig(env);
+  const provider = cfg.ai_provider || 'gemini';
+  const systemPrompt = `You are Ari synthesizing the user's weekly Idea Vault during Friday leisure.
+Group raw ideas by domain tag, highlight actionable themes, and produce clean, structured Markdown.`;
+  const rawList = ideas.map((item, i) => `${i + 1}. [${item.domain_tag}] (${item.created_at}): ${item.content}`).join('\n');
+
+  try {
+    const res = provider === 'claude'
+      ? await callClaudeWaterfall({
+          apiKey: cfg.claude_api_key,
+          tier: 'light',
+          systemPrompt,
+          messages: [{ sender: 'user', message_text: `Synthesize these captured ideas into a structured Markdown report:\n${rawList}` }]
+        })
+      : await callGeminiWaterfall({
+          apiKey: cfg.gemini_api_key,
+          tier: 'light',
+          systemPrompt,
+          messages: [{ sender: 'user', message_text: `Synthesize these captured ideas into a structured Markdown report:\n${rawList}` }]
+        });
+    return res.reply;
+  } catch {
+    // Deterministic structured Markdown compilation if no API key is configured yet
+    const byTag = {};
+    for (const item of ideas) {
+      const tag = item.domain_tag || 'general';
+      if (!byTag[tag]) byTag[tag] = [];
+      byTag[tag].push(item);
+    }
+    let md = `# Friday Idea Vault Synthesis\n\n`;
+    for (const [tag, list] of Object.entries(byTag)) {
+      md += `## ${tag.toUpperCase()}\n`;
+      for (const entry of list) {
+        md += `- ${entry.content} _(${entry.created_at})_\n`;
+      }
+      md += `\n`;
+    }
+    return md;
+  }
+}
+
+
+// ============================================================================
+// CORE ROUTER & DISPATCHER
+// ============================================================================
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
@@ -49,45 +563,56 @@ function getRiyadhDateParts(date = new Date()) {
   };
 }
 
-function isWithinRestWindow(minutesOfDay, restWindowStr = '12:30 - 13:15') {
-  const match = String(restWindowStr).match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
-  if (!match) return false;
-  const startMins = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-  const endMins = parseInt(match[3], 10) * 60 + parseInt(match[4], 10);
-  return minutesOfDay >= startMins && minutesOfDay <= endMins;
+function getLogicalRiyadhDateStr(riyadh, dayStartHour = 0) {
+  const h = Math.max(0, Math.min(4, parseInt(dayStartHour, 10) || 0));
+  if (riyadh.minutesOfDay >= h * 60) return riyadh.dateStr;
+  const d = new Date(`${riyadh.dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function extractTodayBreaksList(breaksStateStr, breaksJsonStr, logicalDateStr) {
+  if (breaksStateStr) {
+    try {
+      const stateObj = JSON.parse(breaksStateStr);
+      if (stateObj && typeof stateObj === 'object' && !Array.isArray(stateObj)) {
+        const rec = stateObj[logicalDateStr];
+        if (rec && Array.isArray(rec.breaks)) return rec.breaks;
+      }
+    } catch {}
+  }
+  if (breaksJsonStr) {
+    try {
+      const parsed = JSON.parse(breaksJsonStr);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
+function isWithinDailyBreaks(minutesOfDay, breaksList) {
+  if (!Array.isArray(breaksList) || breaksList.length === 0) return false;
+  return breaksList.some(b => {
+    if (!b || !b.start || !b.end) return false;
+    const [sH, sM] = String(b.start).split(':').map(Number);
+    const [eH, eM] = String(b.end).split(':').map(Number);
+    if (Number.isNaN(sH) || Number.isNaN(sM) || Number.isNaN(eH) || Number.isNaN(eM)) return false;
+    const startMins = sH * 60 + sM;
+    const endMins = eH * 60 + eM;
+    if (endMins >= startMins) {
+      return minutesOfDay >= startMins && minutesOfDay <= endMins;
+    }
+    // Cross-midnight break window
+    return minutesOfDay >= startMins || minutesOfDay <= endMins;
+  });
 }
 
 /**
  * Unified Bearer Auth & MacroDroid Token Verification
  */
 async function verifyAuth(request, env) {
-  const authHeader = request.headers.get('Authorization') || '';
-  const macroHeader = request.headers.get('X-MacroDroid-Token') || '';
-  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
-  const providedToken = bearer || macroHeader;
-
-  const rows = await env.DB.prepare(
-    `SELECT key, value FROM system_settings WHERE key IN ('master_password', 'macrodroid_token')`
-  ).all();
-
-  const stored = {};
-  for (const r of (rows.results || [])) {
-    if (r.value) stored[r.key] = r.value;
-  }
-
-  // If no password or token is configured yet (initial unified setup), allow request
-  if (!stored.master_password && !stored.macrodroid_token) {
-    return { authorized: true };
-  }
-
-  if (
-    (stored.master_password && providedToken === stored.master_password) ||
-    (stored.macrodroid_token && providedToken === stored.macrodroid_token)
-  ) {
-    return { authorized: true };
-  }
-
-  return { authorized: false };
+  // Single-user personal OS: no authentication wall required
+  return { authorized: true };
 }
 
 /**
@@ -194,24 +719,28 @@ async function getHardwareStatus(env) {
     };
   }
 
-  // Friday Builder Safeguard: Fridays are protected for hobbies & builder work
+  // Friday is a day off
   if (riyadh.weekday === 'Fri') {
     return {
       device_unlocked: true,
-      reason: 'Friday Builder & Hobby Day Protection',
+      reason: 'Friday',
       riyadh_time: riyadh.timeStr
     };
   }
 
-  // Rest window check
-  const restSetting = await env.DB.prepare(
-    `SELECT value FROM system_settings WHERE key = 'rest_window'`
-  ).first();
-  const restWindow = restSetting ? restSetting.value : '12:30 - 13:15';
-  if (isWithinRestWindow(riyadh.minutesOfDay, restWindow)) {
+  // Unified Daily Breaks check (shared between MazenOS and Taskitator)
+  const breakRows = await env.DB.prepare(
+    `SELECT key, value FROM system_settings WHERE key IN ('daily_breaks_state', 'daily_breaks_json', 'day_start_hour')`
+  ).all();
+  const breakCfg = {};
+  for (const r of (breakRows.results || [])) breakCfg[r.key] = r.value;
+  const dayStartHour = Math.max(0, Math.min(4, parseInt(breakCfg.day_start_hour ?? '0', 10) || 0));
+  const logicalDateStr = getLogicalRiyadhDateStr(riyadh, dayStartHour);
+  const activeBreaksList = extractTodayBreaksList(breakCfg.daily_breaks_state, breakCfg.daily_breaks_json, logicalDateStr);
+  if (isWithinDailyBreaks(riyadh.minutesOfDay, activeBreaksList)) {
     return {
       device_unlocked: true,
-      reason: `Inside scheduled rest window (${restWindow})`,
+      reason: 'On scheduled daily break',
       riyadh_time: riyadh.timeStr
     };
   }
@@ -247,11 +776,10 @@ async function getHardwareStatus(env) {
 /**
  * Custom AI Credit Protection: Enforces User-Configured Daily & Monthly Borders
  */
-async function checkApiUsageLimits(env, endpoint = 'chat') {
+async function getApiUsageStats(env) {
   const riyadh = getRiyadhDateParts();
   const monthPrefix = riyadh.dateStr.slice(0, 7); // YYYY-MM
 
-  // Fetch user-defined limits from system_settings
   const limitSettings = await env.DB.prepare(
     `SELECT key, value FROM system_settings WHERE key IN ('daily_ai_limit', 'monthly_ai_limit')`
   ).all();
@@ -261,35 +789,26 @@ async function checkApiUsageLimits(env, endpoint = 'chat') {
     if (r.value !== '' && r.value !== null) limits[r.key] = Number(r.value);
   }
 
-  // Count usage today
   const todayRow = await env.DB.prepare(
     `SELECT COUNT(*) AS count FROM api_usage_logs WHERE date(created_at) = ?`
   ).bind(riyadh.dateStr).first();
   const todayCount = todayRow ? Number(todayRow.count) : 0;
 
-  // Count usage this month
   const monthRow = await env.DB.prepare(
     `SELECT COUNT(*) AS count FROM api_usage_logs WHERE strftime('%Y-%m', created_at) = ?`
   ).bind(monthPrefix).first();
   const monthCount = monthRow ? Number(monthRow.count) : 0;
 
-  if (limits.daily_ai_limit > 0 && todayCount >= limits.daily_ai_limit) {
-    const err = new Error(`Daily AI limit reached (${todayCount}/${limits.daily_ai_limit}). Adjust border in Settings to continue.`);
-    err.code = 'DAILY_LIMIT_EXCEEDED';
-    err.today_count = todayCount;
-    err.daily_limit = limits.daily_ai_limit;
-    throw err;
-  }
+  return {
+    today_count: todayCount,
+    daily_limit: limits.daily_ai_limit,
+    month_count: monthCount,
+    monthly_limit: limits.monthly_ai_limit
+  };
+}
 
-  if (limits.monthly_ai_limit > 0 && monthCount >= limits.monthly_ai_limit) {
-    const err = new Error(`Monthly AI limit reached (${monthCount}/${limits.monthly_ai_limit}). Adjust border in Settings to continue.`);
-    err.code = 'MONTHLY_LIMIT_EXCEEDED';
-    err.month_count = monthCount;
-    err.monthly_limit = limits.monthly_ai_limit;
-    throw err;
-  }
-
-  return { today_count: todayCount, daily_limit: limits.daily_ai_limit, month_count: monthCount, monthly_limit: limits.monthly_ai_limit };
+async function checkApiUsageLimits(env, endpoint = 'chat') {
+  return { allowed: true };
 }
 
 async function logApiUsage(env, provider, model, endpoint) {
@@ -328,7 +847,7 @@ export default {
     try {
             // 1b. AI Credit Protection & Usage Stats Endpoint
       if (path === '/api/usage' && method === 'GET') {
-        const usage = await checkApiUsageLimits(env, 'status').catch(e => e);
+        const usage = await getApiUsageStats(env);
         return jsonResponse(usage);
       }
 
@@ -566,30 +1085,12 @@ export default {
           }, 429);
         }
 
-        // Check usage limits before invoking external AI APIs
-        try {
-          await checkApiUsageLimits(env, 'proof');
-        } catch (limitErr) {
-          return jsonResponse({
-            error: limitErr.message,
-            intercept_code: limitErr.code,
-            today_count: limitErr.today_count,
-            daily_limit: limitErr.daily_limit,
-            month_count: limitErr.month_count,
-            monthly_limit: limitErr.monthly_limit
-          }, 429);
-        }
-
         // Zero-Simulation Policy: fails closed if AI evaluation fails
         const evaluation = await evaluateTaskProof(env, {
           task,
           mimeType: body.mime_type,
           base64Data: body.base64_data
         });
-
-        if (evaluation.provider && evaluation.modelUsed) {
-          await logApiUsage(env, evaluation.provider, evaluation.modelUsed, 'proof');
-        }
 
         if (evaluation.provider && evaluation.modelUsed) {
           await logApiUsage(env, evaluation.provider, evaluation.modelUsed, 'proof');
@@ -974,7 +1475,7 @@ export default {
           return jsonResponse({
             allowed: false,
             device_unlocked: false,
-            reason: 
+            reason: limitErr.message || "API request border reached for media audit"
           }, 429);
         }
 
@@ -990,6 +1491,101 @@ export default {
           allowed: verdict.allowed,
           device_unlocked: verdict.allowed,
           reason: verdict.reason
+        });
+      }
+
+      // 11b. Unified Break Planning System (Shared between MazenOS & Taskitator)
+      if (path === '/api/breaks' && method === 'GET') {
+        const riyadh = getRiyadhDateParts();
+        const rows = await env.DB.prepare(
+          `SELECT key, value, updated_at FROM system_settings WHERE key IN ('daily_breaks_state', 'daily_breaks_json', 'day_start_hour')`
+        ).all();
+        const map = {};
+        let latestUpdated = null;
+        for (const r of (rows.results || [])) {
+          map[r.key] = r.value;
+          if (!latestUpdated || (r.updated_at && r.updated_at > latestUpdated)) latestUpdated = r.updated_at;
+        }
+        const dayStartHour = Math.max(0, Math.min(4, parseInt(map.day_start_hour ?? '0', 10) || 0));
+        const logicalDateStr = getLogicalRiyadhDateStr(riyadh, dayStartHour);
+        let dailyBreaksState = {};
+        if (map.daily_breaks_state) {
+          try {
+            const parsed = JSON.parse(map.daily_breaks_state);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) dailyBreaksState = parsed;
+          } catch {}
+        }
+        const todayBreaks = extractTodayBreaksList(map.daily_breaks_state, map.daily_breaks_json, logicalDateStr);
+        return jsonResponse({
+          day_start_hour: dayStartHour,
+          logical_date: logicalDateStr,
+          daily_breaks_state: dailyBreaksState,
+          today_breaks: todayBreaks,
+          updated_at: latestUpdated
+        });
+      }
+
+      if (path === '/api/breaks' && method === 'POST') {
+        const b = await request.json();
+        const riyadh = getRiyadhDateParts();
+        const existingRows = await env.DB.prepare(
+          `SELECT key, value FROM system_settings WHERE key IN ('daily_breaks_state', 'day_start_hour')`
+        ).all();
+        const existingMap = {};
+        for (const r of (existingRows.results || [])) existingMap[r.key] = r.value;
+
+        let dayStartHour = existingMap.day_start_hour !== undefined
+          ? Math.max(0, Math.min(4, parseInt(existingMap.day_start_hour, 10) || 0))
+          : 0;
+        if (b.day_start_hour !== undefined && b.day_start_hour !== null) {
+          dayStartHour = Math.max(0, Math.min(4, parseInt(b.day_start_hour, 10) || 0));
+        }
+
+        let mergedState = {};
+        if (existingMap.daily_breaks_state) {
+          try {
+            const parsed = JSON.parse(existingMap.daily_breaks_state);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) mergedState = parsed;
+          } catch {}
+        }
+
+        if (b.daily_breaks_state && typeof b.daily_breaks_state === 'object' && !Array.isArray(b.daily_breaks_state)) {
+          for (const [dKey, incomingRec] of Object.entries(b.daily_breaks_state)) {
+            if (!incomingRec || typeof incomingRec !== 'object') continue;
+            mergedState[dKey] = {
+              date: dKey,
+              window_started_at: incomingRec.window_started_at || null,
+              locked: Boolean(incomingRec.locked),
+              breaks: Array.isArray(incomingRec.breaks) ? incomingRec.breaks : [],
+              updated_at: incomingRec.updated_at || Date.now()
+            };
+          }
+        }
+
+        const logicalDateStr = getLogicalRiyadhDateStr(riyadh, dayStartHour);
+        const todayRec = mergedState[logicalDateStr];
+        const todayBreaks = todayRec && Array.isArray(todayRec.breaks)
+          ? todayRec.breaks
+          : (Array.isArray(b.today_breaks) ? b.today_breaks : []);
+
+        const toSave = [
+          ['day_start_hour', String(dayStartHour)],
+          ['daily_breaks_state', JSON.stringify(mergedState)],
+          ['daily_breaks_json', JSON.stringify(todayBreaks)]
+        ];
+        for (const [k, v] of toSave) {
+          await env.DB.prepare(
+            `INSERT INTO system_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`
+          ).bind(k, v).run();
+        }
+
+        return jsonResponse({
+          status: 'synced',
+          day_start_hour: dayStartHour,
+          logical_date: logicalDateStr,
+          daily_breaks_state: mergedState,
+          today_breaks: todayBreaks
         });
       }
 

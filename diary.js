@@ -69,8 +69,13 @@ function renderDiaryList() {
   `).join('');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   fetchDiary();
+  try {
+    const s = JSON.parse(localStorage.getItem('mazenos_settings') || '{}');
+    const moodSel = document.getElementById('diaryMoodSelect');
+    if (s.default_mood_tag && moodSel) moodSel.value = s.default_mood_tag;
+  } catch {}
 
   const writerCard = document.getElementById('diaryWriterCard');
   const canvas = document.getElementById('diaryEditorCanvas');
@@ -134,4 +139,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Diary entry saved.');
     await fetchDiary();
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

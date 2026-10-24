@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MazenOS — Idea Vault</title>
+  <title>MazenOS — Vibe Coding</title>
   <link rel="stylesheet" href="shared.css">
   <style>
     .timer-pill {
@@ -21,8 +21,8 @@
 <body>
   <header class="os-header">
     <div class="os-brand">
-      <a href="index.html" class="os-back-link">&larr; Dashboard</a>
-      <span>Ideas</span>
+      <a href="blocker.html" class="os-back-link">&larr; Blocker</a>
+      <span>Vibe Coding</span>
     </div>
     <div class="os-header-meta">
       <button type="button" class="btn btn-primary" id="startQuickCaptureBtn">+ Add Idea (3:00 Timer)</button>
@@ -31,12 +31,12 @@
   </header>
 
   <main class="os-container">
-    <!-- 3-Minute Write-Only Quick Capture Box -->
+    <!-- Quick Idea Note (3:00 Timer) Box -->
     <div class="card" id="quickCaptureCard" style="display:none;margin-bottom:1.5rem;border-color:var(--warning);">
       <div class="card-header">
         <div>
-          <h2 class="card-title">3-Minute Write-Only Quick Capture</h2>
-          <p class="card-subtitle">Get the distraction out of your head and return immediately to deep work. Vault seals when submitted or at 00:00.</p>
+          <h2 class="card-title">Quick Idea Note (3:00 Timer)</h2>
+          <p class="card-subtitle">Write your coding or project idea down quickly so you can get right back to studying.</p>
         </div>
         <span class="timer-pill" id="captureCountdownDisplay">03:00</span>
       </div>
@@ -66,12 +66,12 @@
     <div class="card">
       <div class="card-header">
         <div>
-          <h1 class="card-title">Idea Vault Confinement</h1>
-          <p class="card-subtitle">Locked as Write-Only during active focus blocks. Synthesize and review during Friday leisure windows.</p>
+          <h1 class="card-title">Saved Coding & Project Ideas</h1>
+          <p class="card-subtitle">Hidden while studying so you do not get distracted. Open and review on Friday.</p>
         </div>
         <div style="display:flex;gap:0.5rem;">
-          <button type="button" class="btn btn-sm btn-secondary" id="toggleVaultLockBtn">Toggle Deep-Work Lock</button>
-          <button type="button" class="btn btn-sm btn-jade" id="synthesizeFridayBtn">Friday Markdown Synthesis</button>
+          <button type="button" class="btn btn-sm btn-secondary" id="toggleVaultLockBtn">Show / Hide Ideas</button>
+          <button type="button" class="btn btn-sm btn-jade" id="synthesizeFridayBtn">Export Ideas (.md)</button>
         </div>
       </div>
 

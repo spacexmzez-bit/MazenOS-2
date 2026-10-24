@@ -156,7 +156,7 @@ async function promoteUnit(unit) {
   await fetchUnits();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   fetchUnits();
 
   document.getElementById('openAddUnitBtn')?.addEventListener('click', () => {
@@ -262,19 +262,35 @@ document.addEventListener('DOMContentLoaded', () => {
       estimated_duration_minutes: 25,
       due_timestamp: `${new Date().toISOString().slice(0, 10)}T19:00`
     };
+    const drillId = `t_drill_${Date.now()}`;
     try {
-      const res = await fetch('/api/tasks', {
+      const tasks = JSON.parse(localStorage.getItem('mazenos_tasks') || '[]');
+      tasks.push({ id: drillId, status: 'pending', ...drillTask });
+      localStorage.setItem('mazenos_tasks', JSON.stringify(tasks));
+      const tkTasks = JSON.parse(localStorage.getItem('taskitator_tasks') || '[]');
+      tkTasks.push({
+        id: drillId,
+        title: drillTask.title,
+        description: drillTask.description,
+        priority: proposedDrillUnit.is_main_objective ? 'prio_high' : 'prio_med',
+        due_date: new Date().toISOString().slice(0, 10),
+        project_id: 'inbox',
+        status: 'active',
+        parent_id: null,
+        tags: ['study'],
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem('taskitator_tasks', JSON.stringify(tkTasks));
+    } catch {}
+    try {
+      await fetch('/api/tasks', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(drillTask)
+        body: JSON.stringify({ id: drillId, ...drillTask })
       });
-      if (!res.ok) throw new Error('Local fallback');
-    } catch {
-      const tasks = JSON.parse(localStorage.getItem('mazenos_tasks') || '[]');
-      tasks.push({ id: `t_drill_${Date.now()}`, status: 'pending', ...drillTask });
-      localStorage.setItem('mazenos_tasks', JSON.stringify(tasks));
-    }
+    } catch {}
     document.getElementById('drillProposalCard').style.display = 'none';
-    showToast('Spaced retrieval drill added to Today's Tasks.');
+    showToast("Spaced retrieval drill added to Today's Tasks.");
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

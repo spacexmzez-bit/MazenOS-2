@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MazenOS — Syllabus (Curry)</title>
+  <title>MazenOS — Study Assistant & Note Taking</title>
   <link rel="stylesheet" href="shared.css">
   <style>
     .ratio-bar {
@@ -34,7 +34,7 @@
   <header class="os-header">
     <div class="os-brand">
       <a href="index.html" class="os-back-link">&larr; Dashboard</a>
-      <span>Syllabus</span>
+      <span>Study Assistant &amp; Note Taking</span>
     </div>
     <div class="os-header-meta">
       <button type="button" class="btn btn-secondary" id="openBulkImportBtn">Import Syllabus JSON</button>
@@ -47,10 +47,10 @@
     <div class="card" style="margin-bottom:1.5rem;">
       <div class="card-header">
         <div>
-          <h1 class="card-title">Focus Allocation &amp; Objective Balancing</h1>
+          <h1 class="card-title">Study Topics &amp; Progress</h1>
           <p class="card-subtitle">Main Objectives receive 70% of daily study blocks (P1); Sub Objectives receive 30% (P2/P3)</p>
         </div>
-        <button type="button" class="btn btn-sm btn-jade" id="proposeDrillBtn">Propose Retrieval Drill</button>
+        <button type="button" class="btn btn-sm btn-jade" id="proposeDrillBtn">Practice Quiz</button>
       </div>
       <div class="ratio-bar">
         <div class="ratio-main" title="Main Objectives (70%)"></div>
@@ -65,7 +65,7 @@
     <!-- Consensual Testing Proposal Banner -->
     <div class="card" id="drillProposalCard" style="display:none;margin-bottom:1.5rem;border-color:var(--accent-jade);">
       <div class="card-header">
-        <h2 class="card-title">Spaced Retrieval Drill Proposal</h2>
+        <h2 class="card-title">Practice Quiz</h2>
       </div>
       <p class="card-subtitle" id="drillProposalText" style="margin-bottom:1rem;"></p>
       <div style="display:flex;gap:0.65rem;">
@@ -145,7 +145,7 @@
   <div class="modal-backdrop" id="bulkImportModal">
     <div class="modal-sheet">
       <div class="card-header">
-        <h2 class="card-title">Zero-Cost Syllabus Decomposition Import</h2>
+        <h2 class="card-title">Import Syllabus JSON</h2>
         <button type="button" class="btn btn-sm btn-secondary" id="closeImportModalBtn">Close</button>
       </div>
       <p class="card-subtitle" style="margin-bottom:0.75rem;">

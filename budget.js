@@ -108,7 +108,7 @@ function renderBudget() {
   `).join('');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function __initModule() {
   fetchBudget();
 
   document.getElementById('manualExpenseForm')?.addEventListener('submit', async (e) => {
@@ -136,6 +136,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('manualExpenseForm').reset();
+    try {
+      const s = JSON.parse(localStorage.getItem('mazenos_settings') || '{}');
+      const wEl = document.getElementById('expWalletInput');
+      if (wEl) wEl.value = s.default_wallet_name || 'Card *4821';
+    } catch {}
     showToast('Expense logged.');
     await fetchBudget();
   });
@@ -162,4 +167,5 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Bank SMS parsed at zero token cost and added to ledger.');
     await fetchBudget();
   });
-});
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', __initModule); } else { __initModule(); }

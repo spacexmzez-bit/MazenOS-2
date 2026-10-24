@@ -15,79 +15,54 @@
   </header>
 
   <main class="os-container">
-    <!-- Top Section: Contextual Settings -->
+    <!-- Top Section: Tool Settings -->
     <section class="card" style="margin-bottom:1.5rem;">
       <div class="card-header">
         <div>
-          <h1 class="card-title" id="contextSectionTitle">Contextual Tool Settings</h1>
-          <p class="card-subtitle" id="contextSectionSubtitle">Settings tailored to the page you navigated from</p>
+          <h1 class="card-title" id="contextSectionTitle">Tool Settings</h1>
+          <p class="card-subtitle" id="contextSectionSubtitle">Preferences for the tool you came from</p>
         </div>
         <select id="contextModuleSelector" style="width:auto;">
-          <option value="dashboard">Dashboard &amp; Rest Window</option>
-          <option value="taskitator">Tasks &amp; Cascading</option>
-          <option value="curry">Syllabus Pacing (Curry)</option>
-          <option value="health">Health &amp; Medicine Defaults</option>
-          <option value="locations">Locations &amp; Commute Threshold</option>
-          <option value="ideas">Idea Vault Timer</option>
-          <option value="diary">Diary Preferences</option>
-          <option value="budget">Budget &amp; Default Card</option>
-          <option value="leisure">Leisure &amp; Friday Protection</option>
+          <option value="dashboard">Dashboard &amp; Daily Breaks</option>
+          <option value="taskitator">Taskitator</option>
+          <option value="budget">Budget</option>
+          <option value="blocker">Blocker &amp; Confinement</option>
+          <option value="curry">Study Assistant</option>
+          <option value="health">Sleep &amp; Health</option>
+          <option value="diary">Diary</option>
+          <option value="leisure">Leisure Hub</option>
         </select>
       </div>
 
       <form id="contextualSettingsForm">
         <div id="contextualFieldsContainer"></div>
-        <button type="submit" class="btn btn-secondary">Save Contextual Settings</button>
+        <button type="submit" class="btn btn-secondary">Save Tool Settings</button>
       </form>
     </section>
 
-    <!-- Bottom Section: Universal Settings -->
+    <!-- Bottom Section: AI & Phone Connection -->
     <section class="card">
       <div class="card-header">
         <div>
-          <h2 class="card-title">Universal System Settings</h2>
-          <p class="card-subtitle">Shared AI provider waterfall, API keys, MacroDroid phone token, and master authentication</p>
+          <h2 class="card-title">AI &amp; Phone Connection</h2>
+          <p class="card-subtitle">API keys and your generated MacroDroid phone token</p>
         </div>
       </div>
 
       <form id="universalSettingsForm">
-        <!-- Live API Credit Border Status -->
-        <div class="card" style="background:var(--bg-elevated);margin-bottom:1.25rem;border-color:var(--border-subtle);">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
-            <div>
-              <strong style="font-size:0.95rem;">API Credit Borders &amp; Usage</strong>
-              <p class="card-subtitle" style="margin-top:0.15rem;">Configurable limits stop requests when reached to protect external API credit.</p>
-            </div>
-            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
-              <span class="badge badge-p3" id="liveDailyUsageBadge">Today: 0 / 50</span>
-              <span class="badge badge-p2" id="liveMonthlyUsageBadge">Month: 0 / 1000</span>
-            </div>
-          </div>
-        </div>
-
         <div class="form-row">
           <div class="form-group">
-            <label for="dailyLimitInput">Daily AI Request Limit (0 for unlimited)</label>
-            <input type="number" id="dailyLimitInput" min="0" max="10000" placeholder="50">
-          </div>
-          <div class="form-group">
-            <label for="monthlyLimitInput">Monthly AI Request Limit (0 for unlimited)</label>
-            <input type="number" id="monthlyLimitInput" min="0" max="100000" placeholder="1000">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="aiProviderSelect">Active AI Provider</label>
+            <label for="aiProviderSelect">AI Provider</label>
             <select id="aiProviderSelect">
-              <option value="gemini">Google Gemini (Flash-Lite / Flash Waterfall)</option>
-              <option value="claude">Anthropic Claude (Haiku / Sonnet Pool)</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="claude">Anthropic Claude</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="modelTierSelect">Model Tier</label>
+            <label for="modelTierSelect">Model Speed</label>
             <select id="modelTierSelect">
-              <option value="light">Light Tier (Fast, High-Quota Daily Execution)</option>
-              <option value="smart">Smart Tier (Deep Reasoning &amp; Multimodal Audits)</option>
+              <option value="light">Fast (Everyday tasks &amp; chat)</option>
+              <option value="smart">Detailed (Photo proof checks &amp; deep reasoning)</option>
             </select>
           </div>
         </div>
@@ -103,18 +78,16 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="macrodroidTokenInput">MacroDroid Phone Bearer Token</label>
-            <input type="password" id="macrodroidTokenInput" placeholder="Shared token for /status and SMS webhooks">
-          </div>
-          <div class="form-group">
-            <label for="masterPasswordInput">Master Authentication Password</label>
-            <input type="password" id="masterPasswordInput" placeholder="Single bearer auth password across all pages">
+        <div class="form-group">
+          <label for="macrodroidTokenInput">MacroDroid Phone Token (Generated by MazenOS — copy this into MacroDroid)</label>
+          <div class="token-box-row">
+            <input type="text" id="macrodroidTokenInput" readonly>
+            <button type="button" class="btn btn-secondary" id="copyMacrodroidTokenBtn">Copy</button>
+            <button type="button" class="btn btn-secondary" id="regenMacrodroidTokenBtn">Generate New</button>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Save Universal Settings</button>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
       </form>
     </section>
   </main>

@@ -50,7 +50,7 @@ export async function buildCompactState(env) {
 
   // Active P1 task
   const activeP1 = await env.DB.prepare(
-    `SELECT id, title, due_timestamp, is_consecutive FROM tasks
+    `SELECT id, title, due_timestamp, is_consecutive, pomodoro_count, pomodoro_estimated FROM tasks
      WHERE status IN ('pending', 'in_progress') AND priority = 1
      ORDER BY CASE WHEN due_timestamp IS NULL THEN 1 ELSE 0 END, due_timestamp ASC LIMIT 1`
   ).first();
@@ -70,11 +70,40 @@ export async function buildCompactState(env) {
      FROM daily_health_logs WHERE date = ?`
   ).bind(todayStr).first();
 
-    // Pomodoro sessions today
+  // Pomodoro sessions today
   const pomodoroRow = await env.DB.prepare(
     `SELECT COUNT(*) AS sessions_count, SUM(duration_minutes) AS total_focus_mins
      FROM focus_sessions WHERE date(started_at) = ? AND completed_at IS NOT NULL`
   ).bind(todayStr).first();
+
+  // Rest window setting
+  const restSetting = await env.DB.prepare(
+    `SELECT value FROM system_settings WHERE key = 'rest_window'`
+  ).first();
+
+  // Latest budget balance
+  const budgetRow = await env.DB.prepare(
+    `SELECT balance_after_sar FROM budget_entries
+     WHERE balance_after_sar IS NOT NULL
+     ORDER BY COALESCE(transaction_timestamp, created_at) DESC LIMIT 1`
+  ).first();
+
+  // Active task & curriculum counts for dashboard cards
+  const taskCountRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS cnt FROM tasks WHERE status IN ('pending', 'in_progress')`
+  ).first();
+  const curryCountRow = await env.DB.prepare(
+    `SELECT COUNT(*) AS cnt FROM curriculum_units`
+  ).first();
+
+  const isSick = healthRow ? Boolean(healthRow.is_sick) : false;
+  const isOverdueP1 = Boolean(
+    activeP1 &&
+    activeP1.due_timestamp &&
+    !Number.isNaN(Date.parse(activeP1.due_timestamp)) &&
+    Date.now() > Date.parse(activeP1.due_timestamp)
+  );
+  const locked = isOverdueP1 && !isSick;
 
   return {
     time_now: timeNowStr,
@@ -99,6 +128,8 @@ export async function buildCompactState(env) {
     },
     rest_window: restSetting ? restSetting.value : '12:30 - 13:15',
     budget_balance_sar: budgetRow ? budgetRow.balance_after_sar : 0,
+    active_tasks_count: taskCountRow ? (taskCountRow.cnt || 0) : 0,
+    curriculum_units_count: curryCountRow ? (curryCountRow.cnt || 0) : 0,
     locked
   };
 }
@@ -421,7 +452,9 @@ Active Curriculum Unit: ${activeUnit ? `${activeUnit.exam_name} - ${activeUnit.t
     const parsed = JSON.parse(res.reply.replace(/```json|```/gi, '').trim());
     return {
       allowed: Boolean(parsed.allowed),
-      reason: String(parsed.reason || 'Evaluated against active study unit.')
+      reason: String(parsed.reason || 'Evaluated against active study unit.'),
+      provider: res.provider,
+      modelUsed: res.modelUsed
     };
   } catch {
     return { allowed: false, reason: 'Media audit could not verify study relevance (fail-closed).' };
